@@ -1,0 +1,17 @@
+# Thrash
+**/__pycache__/
+**/.DS_Store
+.idea/
+
+# venv
+venv/
+
+# databases
+**.db
+**.sqlite3
+
+# docker
+**.yml
+
+# env var
+.env
