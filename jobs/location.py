@@ -9,10 +9,9 @@ from settings.settings import CENTER_POINT_LAT, CENTER_POINT_LNG
 flag = 0
 
 
-async def location(update: Update, context: CallbackContext):
-
+async def location(update: Update, context: CallbackContext) -> None:
+    """Send to user chat information about reaching or leaving the point in area"""
     global flag
-
     message = None
 
     if update.edited_message:
