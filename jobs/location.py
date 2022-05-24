@@ -3,15 +3,12 @@ from telegram.ext import CallbackContext
 
 from geopy import distance
 
+from database.crud import get_activation_status, change_activation_status
 from settings.settings import CENTER_POINT_LAT, CENTER_POINT_LNG
-
-# TODO flag это временный костыль для тестов, будет переделан на работу с sqlite
-flag = 0
 
 
 async def location(update: Update, context: CallbackContext) -> None:
     """Send to user chat information about reaching or leaving the point in area"""
-    global flag
     message = None
 
     if update.edited_message:
@@ -28,10 +25,12 @@ async def location(update: Update, context: CallbackContext) -> None:
 
     dis = distance.distance(center_point_tuple, user_point_tuple).m
 
-    if int(dis) <= radius and flag == 0:
-        await message.reply_text(f'Ты на точке, {message.from_user.name}')
-        flag += 1
+    point = await get_activation_status('echo')  # TODO WIP: временное решение, реализовать нормальную работу с точками
 
-    elif int(dis) > radius and flag > 0:
+    if int(dis) <= radius and point is False:
+        await message.reply_text(f'Ты на точке, {message.from_user.name}')
+        await change_activation_status('echo', True)
+
+    elif int(dis) > radius and point is True:
         await message.reply_text(f'Ты покинул(а) точку, {message.from_user.name}')
-        flag -= 1
+        await change_activation_status('echo', False)
