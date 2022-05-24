@@ -18,7 +18,7 @@ async def location(update: Update, context: CallbackContext) -> None:
 
     center_point = [{'lat': float(CENTER_POINT_LAT), 'lng': float(CENTER_POINT_LNG)}]
     user_point = [{'lat': message.location.latitude, 'lng': message.location.longitude}]
-    radius = 50
+    radius = 25
 
     center_point_tuple = tuple(center_point[0].values())
     user_point_tuple = tuple(user_point[0].values())
