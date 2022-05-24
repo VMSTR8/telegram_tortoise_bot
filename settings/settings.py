@@ -9,6 +9,9 @@ if os.path.exists(dotenv_path):
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+
 CENTER_POINT_LAT = os.environ.get('CENTER_POINT_LAT')
 CENTER_POINT_LNG = os.environ.get('CENTER_POINT_LNG')
 
