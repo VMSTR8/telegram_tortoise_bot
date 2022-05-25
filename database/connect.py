@@ -1,4 +1,4 @@
-from tortoise import Tortoise
+from tortoise import Tortoise, run_async
 
 from database import config
 
