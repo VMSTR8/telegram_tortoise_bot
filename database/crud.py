@@ -114,6 +114,7 @@ async def update_activation_status(point_name: str,
         point_activation_status=point_activation_status)
     await Tortoise.close_connections()
 
+
 # CRUDs for User table
 
 
@@ -121,7 +122,7 @@ async def get_or_create_user(telegram_user_id: int) -> None:
     """
     Creates a new user or returns None if the user already exists.
 
-    :param telegram_user_id: Enter telegram ID user integer
+    :param telegram_user_id: Enter telegram id user integer
     :return: None
     """
     await connect()
@@ -135,7 +136,7 @@ async def update_or_create_callsign(telegram_user_id: int,
     Updates or creates user's callsign.
     If the callsign isn't unique, returns None.
 
-    :param telegram_user_id: Enter telegram user ID integer
+    :param telegram_user_id: Enter telegram user id integer
     :param callsign: Enter callsign string
     :return: None
     """
@@ -156,7 +157,7 @@ async def update_is_team_member(telegram_user_id: int,
     Updates user team member status.
     If the user doesn't exist, returns None.
 
-    :param telegram_user_id: Enter telegram user ID integer
+    :param telegram_user_id: Enter telegram user id integer
     :param is_team_member: Enter team member status boolean
     :return: None
     """
@@ -171,7 +172,7 @@ async def update_is_admin(telegram_user_id: int, is_admin: bool) -> None:
     """
     Updates user admin status. If the user doesn't exist, returns None.
 
-    :param telegram_user_id: Enter telegram user ID integer
+    :param telegram_user_id: Enter telegram user id integer
     :param is_admin: Enter admin status boolean
     :return: None
     """
@@ -184,10 +185,10 @@ async def update_is_admin(telegram_user_id: int, is_admin: bool) -> None:
 
 async def get_is_team_member(telegram_user_id: int) -> list:
     """
-    Returns the list, which contains team member status of the user.
+    Returns the list, which contains a dictionary team member status of the user.
     If the user doesn't exist, returns an empty list.
 
-    :param telegram_user_id: Enter telegram user UD integer
+    :param telegram_user_id: Enter telegram user id integer
     :return: The list, which contains
     a dictionary team member status of the user.
     Example: [{'is_team_member': boolean}].
@@ -201,10 +202,10 @@ async def get_is_team_member(telegram_user_id: int) -> list:
 
 async def get_is_admin(telegram_user_id: int) -> list:
     """
-    Returns the list, which  contains admin status of the user.
+    Returns the list, which contains a dictionary admin status of the user.
     If the user doesn't exist, returns empty list.
 
-    :param telegram_user_id: Enter telegram user UD integer
+    :param telegram_user_id: Enter telegram user id integer
     :return: The list, which contains a dictionary admin status of the user.
     Example: [{'is_admin': boolean}].
     """
@@ -213,3 +214,35 @@ async def get_is_admin(telegram_user_id: int) -> list:
         telegram_user_id=telegram_user_id).values('is_admin')
     await Tortoise.close_connections()
     return user_values
+
+
+async def get_locations_id(telegram_user_id: int) -> list:
+    """
+    Returns the list, which contains a dictionary location id of the user.
+    If the user doesn't exist, returns empty list.
+
+    :param telegram_user_id: Enter telegram user id integer
+    :return: The list, which contains a dictionary admin status of the user.
+    Example: [{'locations_id': integer}].
+    """
+    await connect()
+    user_values = await User.filter(
+        telegram_user_id=telegram_user_id).values('locations_id')
+    await Tortoise.close_connections()
+    return user_values
+
+
+async def update_or_create_locations_id(telegram_user_id: int,
+                                        locations_id: int) -> None:
+    """
+    Updates user location id. If the user doesn't exist, returns None.
+
+    :param telegram_user_id: Enter telegram user id integer
+    :param locations_id: Enter location id integer
+    :return:
+    """
+    await connect()
+    await User.filter(
+        telegram_user_id=telegram_user_id).update(
+        locations_id=locations_id)
+    await Tortoise.close_connections()
