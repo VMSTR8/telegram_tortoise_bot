@@ -18,7 +18,7 @@ class Location(Model):
 class User(Model):
     id = fields.IntField(pk=True)
     telegram_user_id = fields.IntField(unique=True)
-    callsign = fields.CharField(max_length=255, unique=True, null=True, blank=True)
+    callsign = fields.CharField(max_length=255, unique=True, null=True)
     subscribed_date = fields.DatetimeField(auto_now_add=True)
     is_team_member = fields.BooleanField(default=False)
     is_admin = fields.BooleanField(default=False)
