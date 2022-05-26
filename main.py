@@ -1,7 +1,9 @@
 import logging
 
 from telegram.ext import CommandHandler, MessageHandler, ApplicationBuilder, filters
+from tortoise import run_async
 
+from database.init import init
 from jobs.start import start
 from jobs.location import location
 
@@ -20,5 +22,6 @@ if __name__ == '__main__':
 
     application.add_handler(start_handler)
     application.add_handler(location_handler)
+    run_async(init())
 
     application.run_polling()
