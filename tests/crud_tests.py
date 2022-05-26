@@ -8,7 +8,7 @@ from database.crud import Location, User, get_or_create_new_point, \
     update_or_create_locations_id
 
 
-class TestSomething(test.TestCase):
+class TestCRUD(test.TestCase):
 
     async def test_location_crud(self):
         await Location.bulk_create([
