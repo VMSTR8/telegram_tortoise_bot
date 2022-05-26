@@ -15,6 +15,7 @@ logging.basicConfig(
 )
 
 if __name__ == '__main__':
+    run_async(init())
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     start_handler = CommandHandler('start', start)
@@ -22,6 +23,5 @@ if __name__ == '__main__':
 
     application.add_handler(start_handler)
     application.add_handler(location_handler)
-    run_async(init())
 
     application.run_polling()
