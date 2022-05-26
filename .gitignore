@@ -14,15 +14,16 @@ venv/
 
 # docker
 **.yml
-
-# env var
-.env
-
-# other
 database/decorator.py
 dockerfile
 .dockerignore
 
+# env var
+.env
+
 # migrations
 migrations
 **.toml
+
+# other
+database/connect.py
