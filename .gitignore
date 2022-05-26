@@ -26,4 +26,4 @@ migrations
 **.toml
 
 # other
-database/connect.py
+**.pytest_cache
