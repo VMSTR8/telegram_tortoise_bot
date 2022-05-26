@@ -1,7 +1,5 @@
-from tortoise import Tortoise
 from tortoise.exceptions import IntegrityError
 
-from database.connect import connect
 from database.user.models import Location, User
 
 
