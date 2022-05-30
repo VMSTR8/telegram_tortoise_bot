@@ -26,3 +26,4 @@ migrations
 # Other files
 **.pytest_cache
 database/crud.py
+example_run.py
