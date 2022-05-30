@@ -33,7 +33,9 @@ async def start(update: Update,
 
 
 async def callsign(update: Update,
-                   context: CallbackContext.DEFAULT_TYPE) -> int:
+                   context: CallbackContext.DEFAULT_TYPE) -> \
+        CREATE_OR_UPDATE_CALLSIGN:
+
     user = update.message.from_user.id
 
     if user == int(CREATORS_ID):
@@ -55,7 +57,8 @@ async def callsign(update: Update,
 
 
 async def commit_callsign(update: Update,
-                          context: CallbackContext.DEFAULT_TYPE) -> int:
+                          context: CallbackContext.DEFAULT_TYPE) -> END:
+
     user = update.message.from_user.id
     text = update.message.text
     text = re.sub(r'[.\W.\d]', '', text)
@@ -84,7 +87,8 @@ async def commit_callsign(update: Update,
 
 
 async def stop_calsign(update: Update,
-                          context: CallbackContext.DEFAULT_TYPE) -> None:
+                       context: CallbackContext.DEFAULT_TYPE) -> END:
+
     await update.message.reply_text(
         'Обновление позывного отменено.'
     )
