@@ -14,7 +14,9 @@ END = ConversationHandler.END
 
 
 async def admin(update: Update,
-                context: CallbackContext.DEFAULT_TYPE) -> str:
+                context: CallbackContext.DEFAULT_TYPE) -> \
+        SELECTING_ACTION:
+
     user = update.message.from_user.id
     admin_status = await User.get_or_none(
         telegram_id=user
@@ -55,7 +57,9 @@ async def admin(update: Update,
 
 
 async def adding_team(update: Update,
-                      context: CallbackContext.DEFAULT_TYPE) -> str:
+                      context: CallbackContext.DEFAULT_TYPE) -> \
+        ENTERING_TEAM:
+
     text = 'Введи название стороны. Например: желтые.\n\n' \
            'Помни, что название должно быть уникальным.\n' \
            'Команда /stop отменит создание сотороны.'
@@ -72,7 +76,9 @@ async def adding_team(update: Update,
 
 
 async def commit_team(update: Update,
-                      context: CallbackContext) -> str:
+                      context: CallbackContext.DEFAULT_TYPE) -> \
+        SELECTING_ACTION:
+
     text = update.message.text
     text = re.sub(r'[.\W.\d]', '', text)
     text = ''.join(filter(lambda a: a in string.ascii_letters, text))
@@ -87,25 +93,26 @@ async def commit_team(update: Update,
 
 
 async def get_teams() -> list:
-    list_of_teams = []
     teams = await Team.all().values('title')
 
-    for team in teams:
-        list_of_teams.append(team)
+    list_of_teams = [team.get('title') for team in teams]
 
     return list_of_teams
 
 
 async def stop(update: Update,
-               context: CallbackContext.DEFAULT_TYPE) -> str:
+               context: CallbackContext.DEFAULT_TYPE) -> \
+        SELECTING_ACTION:
+
     text = 'Выполнение админских команд остановлено.'
     await update.message.reply_text(text=text)
 
-    return SELECTING_ACTION
+    return END
 
 
 async def end(update: Update,
-              context: CallbackContext.DEFAULT_TYPE) -> str:
+              context: CallbackContext.DEFAULT_TYPE) -> END:
+
     await update.callback_query.answer()
 
     text = 'Выполнение админских команд остановлено.'
