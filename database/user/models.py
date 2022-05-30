@@ -17,7 +17,8 @@ class User(Model):
     is_member = fields.BooleanField(default=False)
     is_admin = fields.BooleanField(default=False)
     team: fields.ForeignKeyRelation[Team] = fields.ForeignKeyField(
-        'models.Team', related_name='users', null=True, on_delete=fields.RESTRICT
+        'models.Team',
+        related_name='users', null=True, on_delete=fields.RESTRICT
     )
 
     def __str__(self):
@@ -30,7 +31,8 @@ class Location(Model):
     latitude = fields.FloatField(default=00.000000, null=False)
     longitude = fields.FloatField(default=00.000000, null=False)
     team: fields.OneToOneRelation[Team] = fields.OneToOneField(
-        'models.Team', related_name='locations', null=True, on_delete=fields.RESTRICT
+        'models.Team',
+        related_name='locations', null=True, on_delete=fields.RESTRICT
     )
 
     def __str__(self):
