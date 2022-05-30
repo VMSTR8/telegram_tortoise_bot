@@ -34,9 +34,6 @@ if __name__ == '__main__':
 
     # Create handlers
     start_handler = CommandHandler('start', start)
-    unrec_message = MessageHandler(
-        filters.TEXT & ~ filters.COMMAND, unrecognized_message
-    )
 
     reg_handler = ConversationHandler(
         allow_reentry=True,
@@ -46,14 +43,14 @@ if __name__ == '__main__':
                 MessageHandler(filters.TEXT & (~ filters.COMMAND), commit_callsign)
             ]
         },
-        fallbacks=[CommandHandler('cancel', stop_calsign)],
+        fallbacks=[MessageHandler(filters.COMMAND, stop_calsign)],
     )
 
     selection_handlers = [
         # editing_team,
         CallbackQueryHandler(adding_team, pattern="^" + str(ADD_TEAM) + "$"),
-        CallbackQueryHandler(sum, pattern="^" + str(EDIT_TEAM) + "$"),
-        CallbackQueryHandler(sum, pattern="^" + str(DELETE_TEAM) + "$"),
+        CallbackQueryHandler(adding_team, pattern="^" + str(EDIT_TEAM) + "$"),  # adding_team временная
+        CallbackQueryHandler(adding_team, pattern="^" + str(DELETE_TEAM) + "$"),  # adding_team временная
         CallbackQueryHandler(end, pattern="^" + str(END) + "$"),
     ]
     admin_handler = ConversationHandler(
@@ -66,14 +63,12 @@ if __name__ == '__main__':
             )],
             STOPPING: [CommandHandler('admin', admin)]
         },
-        fallbacks=[CommandHandler('stop', stop),
-                   CommandHandler('callsign', callsign)]
+        fallbacks=[MessageHandler(filters.COMMAND, stop)]
     )
 
-    application.add_handler(start_handler)
-    application.add_handler(reg_handler)
-    application.add_handler(admin_handler)
-    application.add_handler(unrec_message)
+    application.add_handler(start_handler, 0)
+    application.add_handler(reg_handler, 1)
+    application.add_handler(admin_handler, 2)
 
     # Run the app
     application.run_polling()
