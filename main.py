@@ -71,9 +71,9 @@ if __name__ == '__main__':
     )
 
     application.add_handler(start_handler)
-    application.add_handler(unrec_message)
     application.add_handler(reg_handler)
     application.add_handler(admin_handler)
+    application.add_handler(unrec_message)
 
     # Run the app
     application.run_polling()
