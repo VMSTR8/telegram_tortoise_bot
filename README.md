@@ -5,7 +5,9 @@
 
 На данный момент ведется активная разработка бота.
 
-Стэк: Python 3.8, Python Telegram Bot, Tortoise ORM
+Стэк: [Python 3.8](https://www.python.org/), 
+[Python Telegram Bot](https://github.com/python-telegram-bot/python-telegram-bot), 
+[Tortoise ORM](https://tortoise-orm.readthedocs.io/en/latest/)
 
 ## Начало работы с проектом
 В процессе наполнения
