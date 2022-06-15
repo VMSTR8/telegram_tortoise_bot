@@ -1,15 +1,18 @@
 import re
 import string
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, \
+    KeyboardButton, ReplyKeyboardMarkup
+
 from telegram.ext import CallbackContext, ConversationHandler
 
 from tortoise.exceptions import IntegrityError, ValidationError, DoesNotExist
 
+from transliterate import translit
+
 from settings.settings import CREATORS_ID
 
 from database.user.models import User
-
 from database.db_functions import get_teams, update_players_team
 
 CREATE_OR_UPDATE_CALLSIGN, CHOOSING_TEAM_ACTION = map(chr, range(2))
@@ -59,23 +62,32 @@ async def callsign(update: Update,
 
 async def commit_callsign(update: Update,
                           context: CallbackContext.DEFAULT_TYPE) -> END:
+    button = [[KeyboardButton(text='АКТИВИРОВАТЬ ТОЧКУ',
+                              request_location=True)]]
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True,
+                                   keyboard=button)
+
     user = update.message.from_user.id
+
     text = update.message.text
-    text = re.sub(r'[.\W.\d]', '', text)
-    text = ''.join(filter(lambda a: a in string.ascii_letters, text))
+    text = translit(text, language_code='ru', reversed=True)
+    text = ''.join(
+        filter(lambda a: a in string.ascii_letters or a in string.digits, text)
+    )
 
     try:
         await User.filter(telegram_id=user).update(callsign=text.lower())
-        await update.message.reply_text(
-            f'{text.capitalize()} - принятно, твой позывной успешно обновлен!'
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f'{text.capitalize()} - принятно, твой позывной успешно обновлен!',
+            reply_markup=keyboard
         )
 
         return END
 
     except IntegrityError:
         await update.message.reply_text(
-            'Ошибка, такой позывной уже занят или написан кириллицей, а надо латиницей. '
-            'Попробуй еще раз.\n\n'
+            'Ошибка, такой позывной уже занят. Попробуй еще раз.\n\n'
             'Напоминаю, если хочешь отменить регистрацию позывного, '
             'напиши /cancel в чат.'
         )
