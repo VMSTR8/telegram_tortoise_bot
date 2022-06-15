@@ -1,5 +1,4 @@
 import re
-import string
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler
@@ -101,7 +100,6 @@ async def commit_team(update: Update,
         SELECTING_ACTION:
     text = update.message.text
     text = re.sub(r'[.\W.\d]', '', text)
-    text = ''.join(filter(lambda a: a in string.ascii_letters, text))
     text = text.lower()
 
     await Team.get_or_create(title=text)
