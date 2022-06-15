@@ -15,6 +15,8 @@ from handlers.admin_command import admin, ADD_TEAM, EDIT_TEAM, DELETE_TEAM, \
     END, SELECTING_ACTION, ENTERING_TEAM, STOPPING, adding_team, end, \
     commit_team, stop_admin_handler
 
+from handlers.location import point_activation
+
 from settings.settings import BOT_TOKEN
 
 logging.basicConfig(
@@ -78,10 +80,13 @@ if __name__ == '__main__':
         fallbacks=[MessageHandler(filters.COMMAND, stop_admin_handler)]
     )
 
+    point_activation_handler = MessageHandler(filters.LOCATION, point_activation)
+
     application.add_handler(start_handler, 0)
-    application.add_handler(reg_handler, 1)
+    application.add_handler(point_activation_handler, 4)
+    application.add_handler(reg_handler, 3)
     application.add_handler(team_handler, 2)
-    application.add_handler(admin_handler, 3)
+    application.add_handler(admin_handler, 1)
 
     # Run the app
     application.run_polling()
