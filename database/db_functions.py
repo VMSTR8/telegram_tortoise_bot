@@ -65,3 +65,18 @@ async def get_point_time(point_id: int) -> int:
 async def update_points_in_game_status(point_id: int,
                                        status: bool) -> None:
     await Location.filter(id=point_id).update(in_game=status)
+
+
+async def get_points_in_game_status(point_id: int) -> bool:
+    in_game = await Location.get(id=point_id).values('in_game')
+    return in_game['in_game']
+
+
+async def reset_all_points() -> None:
+    points = await Location.all().values()
+    for point in points:
+        await Location.filter(id=point['id']).update(
+            in_game=True,
+            time=1200.0,
+            team_id=None
+        )
