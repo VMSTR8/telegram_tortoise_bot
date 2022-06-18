@@ -26,18 +26,20 @@ from handlers.menu import (
 )
 
 from handlers.admin_command import (
-    admin,
     ADD_TEAM,
     EDIT_TEAM,
     DELETE_TEAM,
     END,
     SELECTING_ACTION,
     ENTERING_TEAM,
+    RESET_POINTS,
     STOPPING,
+    admin,
     adding_team,
     end,
     commit_team,
-    stop_admin_handler
+    stop_admin_handler,
+    restart_points
 )
 
 from handlers.location import point_activation
@@ -86,10 +88,21 @@ if __name__ == '__main__':
     )
 
     selection_handlers = [
-        CallbackQueryHandler(adding_team, pattern="^" + str(ADD_TEAM) + "$"),
-        CallbackQueryHandler(adding_team, pattern="^" + str(EDIT_TEAM) + "$"),  # adding_team временная
-        CallbackQueryHandler(adding_team, pattern="^" + str(DELETE_TEAM) + "$"),  # adding_team временная
-        CallbackQueryHandler(end, pattern="^" + str(END) + "$"),
+        CallbackQueryHandler(
+            adding_team, pattern="^" + str(ADD_TEAM) + "$"
+        ),
+        CallbackQueryHandler(
+            adding_team, pattern="^" + str(EDIT_TEAM) + "$"
+        ),  # adding_team временная
+        CallbackQueryHandler(
+            adding_team, pattern="^" + str(DELETE_TEAM) + "$"
+        ),  # adding_team временная
+        CallbackQueryHandler(
+            restart_points, pattern="^" + str(RESET_POINTS) + "$"
+        ),
+        CallbackQueryHandler(
+            end, pattern="^" + str(END) + "$"
+        ),
     ]
     admin_handler = ConversationHandler(
         allow_reentry=True,
