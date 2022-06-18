@@ -30,7 +30,9 @@ class Location(Model):
     point = fields.CharField(max_length=255, unique=True, null=False)
     latitude = fields.FloatField(default=00.000000, null=False)
     longitude = fields.FloatField(default=00.000000, null=False)
-    team: fields.OneToOneRelation[Team] = fields.OneToOneField(
+    in_game = fields.BooleanField(default=True, null=False)
+    time = fields.FloatField(default=1200.0, null=False)
+    team: fields.ForeignKeyRelation[Team] = fields.ForeignKeyField(
         'models.Team',
         related_name='locations', null=True, on_delete=fields.RESTRICT
     )
