@@ -15,7 +15,8 @@ from database.db_functions import (
     get_point_time,
     update_points_in_game_status,
     get_team_title_by_team_id,
-    get_users_telegram_id
+    get_users_telegram_id,
+    get_points_in_game_status
 )
 
 from settings.settings import BOT_TOKEN
@@ -73,7 +74,19 @@ async def point_activation(update: Update,
             point_tuple = (point['latitude'], point['longitude'])
             dis = distance.distance(point_tuple, user_point_tuple).m
 
-            if int(dis) <= radius and point['team_id'] != team_id:
+            if int(dis) <= radius and \
+                    not await get_points_in_game_status(point_id=point['id']):
+
+                complete_status = True
+
+                out_of_game_text = f'Точка {point["point"].capitalize()} ' \
+                                   f'уже подорвана и выведена из игры.'
+
+                await message.reply_text(
+                    text=out_of_game_text
+                )
+
+            elif int(dis) <= radius and point['team_id'] != team_id:
 
                 timer = threading.Timer(
                     interval=await get_point_time(point_id=point['id']),
