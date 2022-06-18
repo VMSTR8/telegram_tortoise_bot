@@ -5,14 +5,18 @@ from telegram.ext import CallbackContext, ConversationHandler
 
 from database.user.models import User, Team
 
+from database.db_functions import reset_all_points
+
 SELECTING_ACTION, ADD_TEAM, EDIT_TEAM, \
     DELETE_TEAM, ENTERING_TEAM = map(chr, range(5))
 
 ADD_POINT, EDIT_POINT, DELETE_POINT = map(chr, range(5, 8))
 
-SHOW_ALL_USERS = map(chr, range(8, 9))
+RESET_POINTS = map(chr, range(8, 9))
 
-STOPPING = map(chr, range(9, 10))
+SHOW_ALL_USERS = map(chr, range(9, 10))
+
+STOPPING = map(chr, range(10, 11))
 
 END = ConversationHandler.END
 
@@ -41,6 +45,10 @@ async def admin(update: Update,
                                  callback_data=str(EDIT_POINT)),
             InlineKeyboardButton("Удалить точку",
                                  callback_data=str(DELETE_POINT))
+        ],
+        [
+            InlineKeyboardButton("Сбросить все точки",
+                                 callback_data=str(RESET_POINTS)),
         ],
         [
             InlineKeyboardButton("Показать всех пользователей",
@@ -124,6 +132,22 @@ async def end(update: Update,
     await update.callback_query.answer()
 
     text = 'Выполнение админских команд остановлено.'
+    await update.callback_query.edit_message_text(text=text)
+
+    return END
+
+
+async def restart_points(update: Update,
+                         context: CallbackContext.DEFAULT_TYPE):
+    await update.callback_query.answer()
+
+    await reset_all_points()
+
+    text = 'Значения точек восстановлены по умолчанию.\n\n' \
+           'Все точки введены в игру.\n' \
+           'Таймер установлен на 20 минут.\n' \
+           'Точки не находятся под чьим-то контролем.'
+
     await update.callback_query.edit_message_text(text=text)
 
     return END
