@@ -1,8 +1,13 @@
 import re
 import string
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, \
-    KeyboardButton, ReplyKeyboardMarkup
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup
+)
 
 from telegram.ext import CallbackContext, ConversationHandler
 
@@ -13,7 +18,8 @@ from transliterate import translit
 from settings.settings import CREATORS_ID
 
 from database.user.models import User
-from database.db_functions import get_teams, update_players_team
+from database.db_functions import get_teams, update_players_team, \
+    get_user_callsign
 
 CREATE_OR_UPDATE_CALLSIGN, CHOOSING_TEAM_ACTION = map(chr, range(2))
 
@@ -49,13 +55,13 @@ async def callsign(update: Update,
     else:
         await User.get_or_create(telegram_id=user)
 
-    await update.message.reply_text(
-        'Введи свой позывной в текстовом поле и нажми отправить.\n\n'
-        'Позывной должен быть уникальным и на латинице, поэтому, если '
-        'он уже занят, то я тебя уведмлю об этом. Так же в позывном нельзя '
-        'использовать спец. символы, я их просто удалю.\n\n'
-        'Для отмены регистрации позывного напиши /cancel в чат.'
-    )
+    text = 'Введи свой позывной в текстовом поле и нажми отправить.\n\n' \
+           'Позывной должен быть уникальным и на латинице, поэтому, если ' \
+           'он уже занят, то я тебя уведмлю об этом. ' \
+           'Так же в позывном нельзя использовать спец. символы, ' \
+           'я их просто удалю.\n\n' \
+           'Для отмены регистрации позывного напиши /cancel в чат.'
+    await update.message.reply_text(text=text)
 
     return CREATE_OR_UPDATE_CALLSIGN
 
@@ -69,42 +75,47 @@ async def commit_callsign(update: Update,
 
     user = update.message.from_user.id
 
-    text = update.message.text
-    text = translit(text, language_code='ru', reversed=True)
-    text = ''.join(
-        filter(lambda a: a in string.ascii_letters or a in string.digits, text)
+    users_text = update.message.text
+    users_text = translit(users_text, language_code='ru', reversed=True)
+    users_text = ''.join(
+        filter(
+            lambda a: a in string.ascii_letters or a in string.digits,
+            users_text
+        )
     )
 
     try:
-        await User.filter(telegram_id=user).update(callsign=text.lower())
+        text = f'{users_text.capitalize()} - ' \
+               f'принятно, твой позывной успешно обновлен!'
+
+        await User.filter(telegram_id=user).update(callsign=users_text.lower())
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f'{text.capitalize()} - принятно, твой позывной успешно обновлен!',
+            text=text,
             reply_markup=keyboard
         )
 
         return END
 
     except IntegrityError:
-        await update.message.reply_text(
-            'Ошибка, такой позывной уже занят. Попробуй еще раз.\n\n'
-            'Напоминаю, если хочешь отменить регистрацию позывного, '
-            'напиши /cancel в чат.'
-        )
+        text = 'Ошибка, такой позывной уже занят. Попробуй еще раз.\n\n' \
+               'Напоминаю, если хочешь отменить регистрацию позывного, ' \
+               'напиши /cancel в чат.'
+        await update.message.reply_text(text=text)
+
     except ValidationError:
-        await update.message.reply_text(
-            'Не особо это на позывной похоже, если честно.\n\n'
-            f'Давай-ка, {update.message.from_user.name}, '
-            f'все по новой.'
-        )
+        text = f'Не особо это на позывной похоже, если честно.\n\n' \
+               f'Давай-ка, {update.message.from_user.name}, ' \
+               f'все по новой.'
+        await update.message.reply_text(text=text)
 
 
 async def stop_callsign_handler(update: Update,
                                 context: CallbackContext.DEFAULT_TYPE) -> \
         END:
-    await update.message.reply_text(
-        'Обновление позывного отменено.'
-    )
+    text = 'Обновление позывного отменено.'
+
+    await update.message.reply_text(text=text)
 
     return END
 
@@ -127,8 +138,10 @@ async def team(update: Update,
 
     keyboard = InlineKeyboardMarkup(buttons)
 
+    text = 'Выбери сторону из предложенных ниже:'
+
     await update.message.reply_text(
-        text='Выбери сторону из предложенных ниже:',
+        text=text,
         reply_markup=keyboard
     )
 
@@ -140,24 +153,32 @@ async def choose_the_team(update: Update,
         END:
     await update.callback_query.answer()
 
-    callback_data = re.sub(r'^TEAM_COLOR_', '', update.callback_query.data)
-    callback_data = callback_data.lower()
+    if await get_user_callsign(update.callback_query.from_user.id) is not None:
+        callback_data = re.sub(r'^TEAM_COLOR_', '', update.callback_query.data)
+        callback_data = callback_data.lower()
 
-    try:
-        await update_players_team(
-            int(update.callback_query.from_user.id), str(callback_data)
-        )
+        try:
+            await update_players_team(
+                int(update.callback_query.from_user.id), str(callback_data)
+            )
 
-        text = f'Выбрана сторона: {callback_data.capitalize()}'
+            text = f'Выбрана сторона: {callback_data.capitalize()}'
+            await update.callback_query.edit_message_text(text=text)
+
+        except DoesNotExist:
+            text = 'Что-то пошло не так. Скорее всего ты не ' \
+                   'зарегистрирован(а). Можешь сделать это при ' \
+                   'помощи команды /callsign'
+            await update.callback_query.edit_message_text(text=text)
+
+        return END
+
+    else:
+        text = 'Ты не зарегистрировал свой позывной в чат-боте.\n\n' \
+               'Вспользуйся командой /callsign и введи свой позывной!'
         await update.callback_query.edit_message_text(text=text)
 
-    except DoesNotExist:
-        text = 'Что-то пошло не так. Скорее всего ты не ' \
-               'зарегистрирован(а). Можешь сделать это при ' \
-               'помощи команды /callsign'
-        await update.callback_query.edit_message_text(text=text)
-
-    return END
+        return END
 
 
 async def stop_team_handler(update: Update,
