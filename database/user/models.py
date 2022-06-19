@@ -14,11 +14,10 @@ class User(Model):
     id = fields.IntField(pk=True)
     telegram_id = fields.IntField(unique=True, null=False)
     callsign = fields.CharField(max_length=255, unique=True, null=True)
-    is_member = fields.BooleanField(default=False)
     is_admin = fields.BooleanField(default=False)
     team: fields.ForeignKeyRelation[Team] = fields.ForeignKeyField(
         'models.Team',
-        related_name='users', null=True, on_delete=fields.RESTRICT
+        related_name='users', null=True, on_delete=fields.SET_NULL
     )
 
     def __str__(self):
