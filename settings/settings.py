@@ -13,5 +13,7 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 CREATORS_ID = os.environ.get('CREATORS_ID')
 
+CREATORS_USERNAME = os.environ.get('CREATORS_USERNAME', 'командира или старшего')
+
 if __name__ == '__main__':
     pass
