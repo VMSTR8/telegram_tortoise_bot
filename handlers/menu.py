@@ -15,7 +15,7 @@ from tortoise.exceptions import IntegrityError, ValidationError, DoesNotExist
 
 from transliterate import translit
 
-from settings.settings import CREATORS_ID
+from settings.settings import CREATORS_ID, CREATORS_USERNAME
 
 from database.user.models import User
 from database.db_functions import get_teams, update_players_team, \
@@ -50,7 +50,6 @@ async def callsign(update: Update,
 
     if user == int(CREATORS_ID):
         await User.get_or_create(telegram_id=user,
-                                 is_member=True,
                                  is_admin=True)
     else:
         await User.get_or_create(telegram_id=user)
@@ -79,7 +78,8 @@ async def commit_callsign(update: Update,
     users_text = translit(users_text, language_code='ru', reversed=True)
     users_text = ''.join(
         filter(
-            lambda a: a in string.ascii_letters or a in string.digits,
+            lambda letters:
+            letters in string.ascii_letters or letters in string.digits,
             users_text
         )
     )
@@ -124,28 +124,56 @@ async def team(update: Update,
                context: CallbackContext.DEFAULT_TYPE) -> \
         CHOOSING_TEAM_ACTION:
     buttons = []
+
     teams = await get_teams()
 
-    for team_title in teams:
-        buttons.append(
-            [
-                InlineKeyboardButton(team_title.capitalize(),
-                                     callback_data=str(
-                                         f'TEAM_COLOR_{team_title.upper()}')
-                                     )
-            ]
+    try:
+        await get_user_callsign(update.message.from_user.id)
+
+        if teams:
+            for team_title in teams:
+                buttons.append(
+                    [
+                        InlineKeyboardButton(team_title.capitalize(),
+                                             callback_data=str(
+                                                 f'TEAM_COLOR_{team_title.upper()}')
+                                             )
+                    ]
+                )
+
+            keyboard = InlineKeyboardMarkup(buttons)
+
+            text = 'Выбери сторону из предложенных ниже:\n\n' \
+                   'Если хочешь отменить выбор стороны, то просто ' \
+                   'вбей любую другую команду или напиши что-нибудь ' \
+                   'в чат.'
+
+            await update.message.reply_text(
+                text=text,
+                reply_markup=keyboard
+            )
+
+            return CHOOSING_TEAM_ACTION
+
+        else:
+            no_teams = f'Нет сторон, к которым можно примкнуть.\n' \
+                       f'Попроси {CREATORS_USERNAME} добавить стороны.'
+
+            await update.message.reply_text(
+                text=no_teams
+            )
+
+            return END
+
+    except DoesNotExist:
+        user_does_not_exist = 'Без понятия кто ты, пройди регистрацию, ' \
+                              'введя команду /callsign'
+
+        await update.message.reply_text(
+            text=user_does_not_exist
         )
 
-    keyboard = InlineKeyboardMarkup(buttons)
-
-    text = 'Выбери сторону из предложенных ниже:'
-
-    await update.message.reply_text(
-        text=text,
-        reply_markup=keyboard
-    )
-
-    return CHOOSING_TEAM_ACTION
+        return END
 
 
 async def choose_the_team(update: Update,
