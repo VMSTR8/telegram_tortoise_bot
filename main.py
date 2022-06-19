@@ -29,20 +29,26 @@ from handlers.admin_command import (
     ADD_TEAM,
     EDIT_TEAM,
     DELETE_TEAM,
-    END,
     SELECTING_ACTION,
     ENTERING_TEAM,
+    ENTERING_EDITING_TEAM,
+    UPDATE_TEAM,
     RESET_POINTS,
-    STOPPING,
     admin,
     adding_team,
-    end,
+    editing_team,
+    commit_editing_team,
+    update_team,
     commit_team,
+    deleting_team,
+    commit_deleting_team,
     stop_admin_handler,
     restart_points
 )
 
 from handlers.location import point_activation
+
+from handlers.unrecognized import unrecognized_command
 
 from settings.settings import BOT_TOKEN
 
@@ -84,7 +90,9 @@ if __name__ == '__main__':
                 pattern="^" + 'TEAM_COLOR_' + ".*$"),
             ],
         },
-        fallbacks=[MessageHandler(filters.COMMAND, stop_team_handler)],
+        fallbacks=[MessageHandler(
+            filters.TEXT & (~filters.COMMAND), stop_team_handler
+        )],
     )
 
     selection_handlers = [
@@ -92,16 +100,13 @@ if __name__ == '__main__':
             adding_team, pattern="^" + str(ADD_TEAM) + "$"
         ),
         CallbackQueryHandler(
-            adding_team, pattern="^" + str(EDIT_TEAM) + "$"
-        ),  # adding_team временная
-        CallbackQueryHandler(
-            adding_team, pattern="^" + str(DELETE_TEAM) + "$"
-        ),  # adding_team временная
-        CallbackQueryHandler(
-            restart_points, pattern="^" + str(RESET_POINTS) + "$"
+            editing_team, pattern="^" + str(EDIT_TEAM) + "$"
         ),
         CallbackQueryHandler(
-            end, pattern="^" + str(END) + "$"
+            deleting_team, pattern="^" + str(DELETE_TEAM) + "$"
+        ),
+        CallbackQueryHandler(
+            restart_points, pattern="^" + str(RESET_POINTS) + "$"
         ),
     ]
     admin_handler = ConversationHandler(
@@ -112,7 +117,17 @@ if __name__ == '__main__':
             ENTERING_TEAM: [MessageHandler(
                 filters.TEXT & ~ filters.COMMAND, commit_team
             )],
-            STOPPING: [CommandHandler('admin', admin)]
+            ENTERING_EDITING_TEAM: [CallbackQueryHandler(
+                callback=commit_editing_team,
+                pattern="^" + 'TEAM_COLOR_' + ".*$"
+            )],
+            UPDATE_TEAM: [MessageHandler(
+                filters.TEXT & ~ filters.COMMAND, update_team
+            )],
+            DELETE_TEAM: [CallbackQueryHandler(
+                callback=commit_deleting_team,
+                pattern="^" + 'TEAM_COLOR_' + ".*$"
+            )]
         },
         fallbacks=[MessageHandler(filters.COMMAND, stop_admin_handler)]
     )
@@ -121,7 +136,12 @@ if __name__ == '__main__':
         filters.LOCATION, point_activation
     )
 
+    unrecognized_command_handler = MessageHandler(
+        filters.TEXT & (~ filters.COMMAND), unrecognized_command
+    )
+
     application.add_handler(start_handler, 0)
+    application.add_handler(unrecognized_command_handler, 5)
     application.add_handler(point_activation_handler, 4)
     application.add_handler(reg_handler, 3)
     application.add_handler(team_handler, 2)
