@@ -7,7 +7,10 @@ from database.user.models import Team, User, Location
 
 async def get_user_callsign(telegram_id: int) -> str:
     callsign = await User.get(telegram_id=telegram_id).values('callsign')
-    return callsign['callsign']
+    if callsign.get('callsign') is not None:
+        return callsign.get('callsign')
+    else:
+        raise DoesNotExist
 
 
 async def get_users_telegram_id() -> List[int]:
@@ -44,6 +47,10 @@ async def get_users_team_id(telegram_id: int) -> int:
 async def get_team_title_by_team_id(team_id: int) -> str:
     team_title = await Team.get(id=team_id).values()
     return team_title['title']
+
+
+async def delete_team(team_title: str) -> None:
+    await Team.filter(title=team_title).delete()
 
 
 async def get_points() -> List[dict]:
