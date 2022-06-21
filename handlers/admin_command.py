@@ -1,27 +1,30 @@
 import re
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram import Update
+from telegram.ext import CallbackContext, ConversationHandler, ApplicationHandlerStop
 
-from database.user.models import User, Team, Location
+from database.user.models import User, Team
 
 from database.db_functions import (
     reset_all_points,
     get_teams,
-    delete_team
+    delete_team,
 )
 
-SELECTING_ACTION, ADD_TEAM, EDIT_TEAM, \
-    DELETE_TEAM, ENTERING_TEAM, \
-    ENTERING_EDITING_TEAM, UPDATE_TEAM = map(chr, range(7))
+from keyboards.keyboards import (
+    query_team_keyboard,
+    admin_keyboad,
+)
 
-ADD_POINT, EDIT_POINT, DELETE_POINT = map(chr, range(7, 10))
+(
+    SELECTING_ACTION,
+    ENTER_TEAM,
+    ENTER_EDITING_TEAM,
+    ENTER_TEAM_NEW_DATA,
+    ENTER_DELETING_TEAM,
+) = map(chr, range(5))
 
-RESET_POINTS = map(chr, range(10, 11))
-
-SHOW_ALL_USERS = map(chr, range(11, 12))
-
-STOPPING = map(chr, range(12, 13))
+STOPPING = map(chr, range(5, 6))
 
 END = ConversationHandler.END
 
@@ -34,43 +37,16 @@ async def admin(update: Update,
         telegram_id=user
     ).values('is_admin')
 
-    buttons = [
-        [
-            InlineKeyboardButton("Add Team",
-                                 callback_data=str(ADD_TEAM)),
-            InlineKeyboardButton("Edit Team",
-                                 callback_data=str(EDIT_TEAM)),
-            InlineKeyboardButton("Del Team",
-                                 callback_data=str(DELETE_TEAM))
-        ],
-        [
-            InlineKeyboardButton("Add Point",
-                                 callback_data=str(ADD_POINT)),
-            InlineKeyboardButton("Edit Point",
-                                 callback_data=str(EDIT_POINT)),
-            InlineKeyboardButton("Del Point",
-                                 callback_data=str(DELETE_POINT))
-        ],
-        [
-            InlineKeyboardButton("Restart all points",
-                                 callback_data=str(RESET_POINTS)),
-        ],
-        [
-            InlineKeyboardButton("Show all users",
-                                 callback_data=str(SHOW_ALL_USERS)),
-        ],
-    ]
-
-    keyboard = InlineKeyboardMarkup(buttons)
-
     try:
         if admin_status['is_admin']:
-            await update.message.reply_text(
+            save_data = await update.message.reply_text(
                 text='Выбери один из пунктов меню.\n\n'
                      'Для завершения работы с админ меню '
                      'введи команду /stop',
-                reply_markup=keyboard
+                reply_markup=await admin_keyboad()
             )
+
+            context.user_data['admin_message_id'] = int(save_data.message_id)
 
             return SELECTING_ACTION
 
@@ -90,44 +66,20 @@ async def admin(update: Update,
         return END
 
 
-async def list_of_teams_keyboard(update: Update,
-                                 context: CallbackContext.DEFAULT_TYPE) -> \
-        InlineKeyboardMarkup:
-    await update.callback_query.answer()
-
-    buttons = []
-    teams = await get_teams()
-
-    for team_title in teams:
-        buttons.append(
-            [
-                InlineKeyboardButton(team_title.capitalize(),
-                                     callback_data=str(
-                                         f'TEAM_COLOR_{team_title.upper()}')
-                                     )
-            ]
-        )
-
-    keyboard = InlineKeyboardMarkup(buttons)
-
-    return keyboard
-
-
 async def adding_team(update: Update,
                       context: CallbackContext.DEFAULT_TYPE) -> \
-        ENTERING_TEAM:
+        ENTER_TEAM:
     text = 'Введи название стороны. Например: желтые.\n\n' \
            'Помни, что название должно быть уникальным.\n' \
            'Команда /stop отменит создание сотороны.'
 
     await update.callback_query.answer()
 
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
+    await update.callback_query.edit_message_text(
         text=text
     )
 
-    return ENTERING_TEAM
+    return ENTER_TEAM
 
 
 async def commit_team(update: Update,
@@ -136,33 +88,38 @@ async def commit_team(update: Update,
     teams = await get_teams()
 
     text = update.message.text
-    text = re.sub(r'[.\W.\d]', '', text)
+    text = re.sub(r'[^а-яА-Яa-zA-Z]', '', text)
     text = text.lower().replace('ё', 'е')
 
     if text in teams:
 
         team_already_exists = 'Такая сторона уже существует.\n' \
                               'Введи другое название.\n\n' \
-                              'Команда /admin заново вызовет админ-меню.\n' \
                               'Команда /stop остановит админ-меню.'
 
         await update.message.reply_text(text=team_already_exists)
 
-        return ENTERING_TEAM
+        raise ApplicationHandlerStop(ENTER_TEAM)
 
     else:
-        tean_created = f'{text.capitalize()}, ' \
+        team_created = f'{text.capitalize()}, ' \
                        f'принято и записано в базу данных.'
 
         await Team.get_or_create(title=text)
-        await update.message.reply_text(text=tean_created)
+        save_data = await context.bot.send_message(
+            text=team_created,
+            chat_id=update.effective_chat.id,
+            reply_markup=await admin_keyboad()
+        )
 
-        return SELECTING_ACTION
+        context.user_data['admin_message_id'] = int(save_data.message_id)
+
+        raise ApplicationHandlerStop(SELECTING_ACTION)
 
 
 async def editing_team(update: Update,
                        context: CallbackContext.DEFAULT_TYPE) -> \
-        ENTERING_EDITING_TEAM:
+        ENTER_EDITING_TEAM:
     teams = await get_teams()
 
     if teams:
@@ -171,17 +128,17 @@ async def editing_team(update: Update,
 
         await update.callback_query.edit_message_text(
             text=edit_team_text,
-            reply_markup=await list_of_teams_keyboard(update, context)
+            reply_markup=await query_team_keyboard(update, context)
         )
 
-        return ENTERING_EDITING_TEAM
+        return ENTER_EDITING_TEAM
 
     else:
         no_teams = 'Нет команд, чтобы можно было что-то редактировать.'
 
         await update.callback_query.edit_message_text(
             text=no_teams,
-            reply_markup=await list_of_teams_keyboard(update, context)
+            reply_markup=await query_team_keyboard(update, context)
         )
 
         return END
@@ -189,7 +146,7 @@ async def editing_team(update: Update,
 
 async def commit_editing_team(update: Update,
                               context: CallbackContext.DEFAULT_TYPE) -> \
-        UPDATE_TEAM:
+        ENTER_TEAM_NEW_DATA:
     await update.callback_query.answer()
 
     callback_data = re.sub(r'^TEAM_COLOR_', '', update.callback_query.data)
@@ -207,7 +164,7 @@ async def commit_editing_team(update: Update,
         text=enter_new_titile
     )
 
-    return UPDATE_TEAM
+    return ENTER_TEAM_NEW_DATA
 
 
 async def update_team(update: Update,
@@ -218,18 +175,17 @@ async def update_team(update: Update,
     teams = await get_teams()
 
     text = update.message.text
-    text = re.sub(r'[.\W.\d]', '', text)
+    text = re.sub(r'[^а-яА-Яa-zA-Z]', '', text)
     text = text.lower().replace('ё', 'е')
 
     if text in teams:
         team_already_exists = 'Такая сторона уже существует.\n' \
                               'Введи другое название.\n\n' \
-                              'Команда /admin заново вызовет админ-меню.\n' \
                               'Команда /stop остановит админ-меню.'
 
         await update.message.reply_text(text=team_already_exists)
 
-        return UPDATE_TEAM
+        return ENTER_TEAM_NEW_DATA
 
     else:
         await Team.filter(title=saved_data).update(title=text)
@@ -237,11 +193,16 @@ async def update_team(update: Update,
         update_success = f'{saved_data.capitalize()} - название ' \
                          f'изменено на {text.capitalize()}'
 
-        await update.message.reply_text(
-            text=update_success
+        save_data = await context.bot.send_message(
+            text=update_success,
+            chat_id=update.effective_chat.id,
+            reply_markup=await admin_keyboad()
         )
 
-        return END
+        context.user_data.clear()
+        context.user_data['admin_message_id'] = int(save_data.message_id)
+
+        raise ApplicationHandlerStop(SELECTING_ACTION)
 
 
 async def deleting_team(update: Update,
@@ -254,10 +215,10 @@ async def deleting_team(update: Update,
 
         await update.callback_query.edit_message_text(
             text=edit_team_text,
-            reply_markup=await list_of_teams_keyboard(update, context)
+            reply_markup=await query_team_keyboard(update, context)
         )
 
-        return DELETE_TEAM
+        return ENTER_DELETING_TEAM
 
     else:
         no_teams = 'Нет добавленных команд. Нечего удалять.'
@@ -283,19 +244,34 @@ async def commit_deleting_team(update: Update,
                      f'если не предупредить, но вот будет неожиданость, когда ' \
                      f'бот при активации точки скажет игроку "ты не выбрал сторону!"'
 
-    await update.callback_query.edit_message_text(
-        text=delete_success
+    save_data = await update.callback_query.edit_message_text(
+        text=delete_success,
+        reply_markup=await admin_keyboad()
     )
 
-    return END
+    context.user_data['admin_message_id'] = int(save_data.message_id)
+
+    return SELECTING_ACTION
 
 
 async def stop_admin_handler(update: Update,
                              context: CallbackContext.DEFAULT_TYPE) -> \
         END:
-    text = 'Выполнение админских команд остановлено.'
-    await update.message.reply_text(text=text)
+    admin_stop_edit_message = 'Выполнение админских команд остановлено.'
 
+    admin_stop_reply_text = 'Админ-меню было закрыто.\n' \
+                            'Выполнение админских команд остановлено.\n' \
+                            'Для повторного вызова вбей команду /admin.'
+
+    await context.bot.edit_message_text(
+        text=admin_stop_edit_message,
+        chat_id=update.effective_chat.id,
+        message_id=context.user_data.get('admin_message_id')
+    )
+
+    await update.effective_message.reply_text(
+        text=admin_stop_reply_text
+    )
     return END
 
 
@@ -320,6 +296,8 @@ async def restart_points(update: Update,
            'Таймер установлен на 20 минут.\n' \
            'Точки не находятся под чьим-то контролем.'
 
-    await update.callback_query.edit_message_text(text=text)
+    await update.callback_query.edit_message_text(
+        text=text
+    )
 
     return END
