@@ -6,12 +6,19 @@ from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
     ConversationHandler,
-    filters
+    filters,
 )
 
 from tortoise import run_async
 
 from database.init import init
+
+from keyboards.keyboards import (
+    ADD_TEAM,
+    EDIT_TEAM,
+    DELETE_TEAM,
+    RESET_POINTS,
+)
 
 from handlers.menu import (
     CREATE_OR_UPDATE_CALLSIGN,
@@ -22,18 +29,16 @@ from handlers.menu import (
     stop_callsign_handler,
     team,
     choose_the_team,
-    stop_team_handler
+    stop_team_handler,
 )
 
 from handlers.admin_command import (
-    ADD_TEAM,
-    EDIT_TEAM,
-    DELETE_TEAM,
     SELECTING_ACTION,
-    ENTERING_TEAM,
-    ENTERING_EDITING_TEAM,
-    UPDATE_TEAM,
-    RESET_POINTS,
+    ENTER_TEAM,
+    ENTER_EDITING_TEAM,
+    ENTER_TEAM_NEW_DATA,
+    ENTER_DELETING_TEAM,
+    STOPPING,
     admin,
     adding_team,
     editing_team,
@@ -43,7 +48,7 @@ from handlers.admin_command import (
     deleting_team,
     commit_deleting_team,
     stop_admin_handler,
-    restart_points
+    restart_points,
 )
 
 from handlers.location import point_activation
@@ -56,7 +61,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
-
 
 if __name__ == '__main__':
     # Init database connect
@@ -78,20 +82,21 @@ if __name__ == '__main__':
                 )
             ]
         },
-        fallbacks=[MessageHandler(filters.COMMAND, stop_callsign_handler)],
+        fallbacks=[MessageHandler(
+            filters.COMMAND, stop_callsign_handler
+        )],
     )
 
     team_handler = ConversationHandler(
-        allow_reentry=True,
         entry_points=[CommandHandler('team', team)],
         states={
             CHOOSING_TEAM_ACTION: [CallbackQueryHandler(
                 callback=choose_the_team,
                 pattern="^" + 'TEAM_COLOR_' + ".*$"),
-            ],
+            ]
         },
         fallbacks=[MessageHandler(
-            filters.TEXT & (~filters.COMMAND), stop_team_handler
+            filters.TEXT, stop_team_handler
         )],
     )
 
@@ -110,26 +115,32 @@ if __name__ == '__main__':
         ),
     ]
     admin_handler = ConversationHandler(
-        allow_reentry=True,
         entry_points=[CommandHandler('admin', admin)],
         states={
             SELECTING_ACTION: selection_handlers,
-            ENTERING_TEAM: [MessageHandler(
+
+            ENTER_TEAM: [MessageHandler(
                 filters.TEXT & ~ filters.COMMAND, commit_team
             )],
-            ENTERING_EDITING_TEAM: [CallbackQueryHandler(
+
+            ENTER_EDITING_TEAM: [CallbackQueryHandler(
                 callback=commit_editing_team,
                 pattern="^" + 'TEAM_COLOR_' + ".*$"
             )],
-            UPDATE_TEAM: [MessageHandler(
+
+            ENTER_TEAM_NEW_DATA: [MessageHandler(
                 filters.TEXT & ~ filters.COMMAND, update_team
             )],
-            DELETE_TEAM: [CallbackQueryHandler(
+
+            ENTER_DELETING_TEAM: [CallbackQueryHandler(
                 callback=commit_deleting_team,
                 pattern="^" + 'TEAM_COLOR_' + ".*$"
-            )]
+            )],
+            STOPPING: [CommandHandler('admin', admin)]
         },
-        fallbacks=[MessageHandler(filters.COMMAND, stop_admin_handler)]
+        fallbacks=[MessageHandler(
+            filters.COMMAND, stop_admin_handler
+        )],
     )
 
     point_activation_handler = MessageHandler(
@@ -137,7 +148,7 @@ if __name__ == '__main__':
     )
 
     unrecognized_command_handler = MessageHandler(
-        filters.TEXT & (~ filters.COMMAND), unrecognized_command
+        filters.CHAT & (~ filters.COMMAND), unrecognized_command
     )
 
     application.add_handler(start_handler, 0)
