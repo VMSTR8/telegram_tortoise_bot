@@ -33,7 +33,7 @@ async def success_activation(point_id: int,
         status=False
     )
 
-    text = f'{point} была подорвана стороной {team}.'
+    text = f'{point.upper()} была подорвана стороной {team}.'
     for user_telegram_id in await get_users_telegram_id():
 
         await app.bot.send_message(chat_id=user_telegram_id, text=text)
@@ -79,7 +79,7 @@ async def point_activation(update: Update,
 
                 complete_status = True
 
-                out_of_game_text = f'Точка {point["point"].capitalize()} ' \
+                out_of_game_text = f'Точка {point["point"].upper()} ' \
                                    f'уже подорвана и выведена из игры.'
 
                 await message.reply_text(
@@ -109,7 +109,7 @@ async def point_activation(update: Update,
                 complete_status = True
 
                 activation_text = f"{message.from_user.name}, " \
-                                  f"{point['point'].capitalize()} активирована"
+                                  f"{point['point'].upper()} активирована!"
 
                 await update_points_team_id(point_id=point['id'],
                                             team_id=team_id)
@@ -120,7 +120,7 @@ async def point_activation(update: Update,
                 complete_status = True
 
                 already_active_text = 'Точка уже активирована ' \
-                                      'твоей игровой стороной.'
+                                      'твоей игровой стороной!'
 
                 await message.reply_text(
                     text=already_active_text
@@ -133,7 +133,7 @@ async def point_activation(update: Update,
                 continue
 
         if complete_status is False:
-            not_reached_text = 'Ни одна из точек не была достигнута.'
+            not_reached_text = 'Ни одна из точек не была достигнута!'
             await message.reply_text(text=not_reached_text)
 
     except DoesNotExist:
@@ -142,4 +142,5 @@ async def point_activation(update: Update,
                'Для этого необходимо зарегистрироваться при ' \
                'помощи команды:\n/callsign\n\n' \
                'Затем выбрать сторону при помощи команды:\n/team'
+
         await update.message.reply_text(text=text)
