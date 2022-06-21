@@ -3,19 +3,19 @@ import string
 
 from telegram import (
     Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
     KeyboardButton,
-    ReplyKeyboardMarkup
+    ReplyKeyboardMarkup,
 )
 
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram.ext import CallbackContext, ConversationHandler, ApplicationHandlerStop
 
 from tortoise.exceptions import IntegrityError, ValidationError, DoesNotExist
 
 from transliterate import translit
 
 from settings.settings import CREATORS_ID, CREATORS_USERNAME
+
+from keyboards.keyboards import team_keyboard
 
 from database.user.models import User
 from database.db_functions import get_teams, update_players_team, \
@@ -60,7 +60,9 @@ async def callsign(update: Update,
            'Так же в позывном нельзя использовать спец. символы, ' \
            'я их просто удалю.\n\n' \
            'Для отмены регистрации позывного напиши /cancel в чат.'
-    await update.message.reply_text(text=text)
+    save_data = await update.message.reply_text(text=text)
+
+    context.user_data['callsign_message_id'] = int(save_data.message_id)
 
     return CREATE_OR_UPDATE_CALLSIGN
 
@@ -95,7 +97,7 @@ async def commit_callsign(update: Update,
             reply_markup=keyboard
         )
 
-        return END
+        raise ApplicationHandlerStop(END)
 
     except IntegrityError:
         text = 'Ошибка, такой позывной уже занят. Попробуй еще раз.\n\n' \
@@ -103,11 +105,16 @@ async def commit_callsign(update: Update,
                'напиши /cancel в чат.'
         await update.message.reply_text(text=text)
 
+        return CREATE_OR_UPDATE_CALLSIGN
+
     except ValidationError:
         text = f'Не особо это на позывной похоже, если честно.\n\n' \
                f'Давай-ка, {update.message.from_user.name}, ' \
-               f'все по новой.'
+               f'все по новой. Ну или жми /cancel, чтобы отменить ' \
+               f'регистрацию позывного.'
         await update.message.reply_text(text=text)
+
+        return CREATE_OR_UPDATE_CALLSIGN
 
 
 async def stop_callsign_handler(update: Update,
@@ -115,7 +122,11 @@ async def stop_callsign_handler(update: Update,
         END:
     text = 'Обновление позывного отменено.'
 
-    await update.message.reply_text(text=text)
+    await context.bot.edit_message_text(
+        text=text,
+        chat_id=update.effective_chat.id,
+        message_id=context.user_data.get('callsign_message_id'),
+    )
 
     return END
 
@@ -123,7 +134,6 @@ async def stop_callsign_handler(update: Update,
 async def team(update: Update,
                context: CallbackContext.DEFAULT_TYPE) -> \
         CHOOSING_TEAM_ACTION:
-    buttons = []
 
     teams = await get_teams()
 
@@ -131,27 +141,18 @@ async def team(update: Update,
         await get_user_callsign(update.message.from_user.id)
 
         if teams:
-            for team_title in teams:
-                buttons.append(
-                    [
-                        InlineKeyboardButton(team_title.capitalize(),
-                                             callback_data=str(
-                                                 f'TEAM_COLOR_{team_title.upper()}')
-                                             )
-                    ]
-                )
-
-            keyboard = InlineKeyboardMarkup(buttons)
 
             text = 'Выбери сторону из предложенных ниже:\n\n' \
                    'Если хочешь отменить выбор стороны, то просто ' \
-                   'вбей любую другую команду или напиши что-нибудь ' \
-                   'в чат.'
+                   'вбей /team или любую другую команду. Ну или напиши ' \
+                   'что-нибудь в чат.'
 
-            await update.message.reply_text(
+            save_data = await update.message.reply_text(
                 text=text,
-                reply_markup=keyboard
+                reply_markup=await team_keyboard()
             )
+
+            context.user_data['team_message_id'] = int(save_data.message_id)
 
             return CHOOSING_TEAM_ACTION
 
@@ -214,6 +215,10 @@ async def stop_team_handler(update: Update,
         END:
     text = 'Выбор стороны прекращен. Если нужно выбрать сторону, ' \
            'повторно введи /team в чат.'
-    await update.message.reply_text(text=text)
+    await context.bot.edit_message_text(
+        text=text,
+        chat_id=update.effective_chat.id,
+        message_id=context.user_data.get('team_message_id')
+    )
 
     return END
