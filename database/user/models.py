@@ -33,7 +33,7 @@ class Location(Model):
     time = fields.FloatField(default=1200.0, null=False)
     team: fields.ForeignKeyRelation[Team] = fields.ForeignKeyField(
         'models.Team',
-        related_name='locations', null=True, on_delete=fields.RESTRICT
+        related_name='locations', null=True, on_delete=fields.SET_NULL
     )
 
     def __str__(self):
