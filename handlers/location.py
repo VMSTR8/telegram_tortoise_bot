@@ -15,7 +15,7 @@ from database.db_functions import (
     get_point_time,
     update_points_in_game_status,
     get_team_title_by_team_id,
-    get_users_telegram_id,
+    get_users,
     get_points_in_game_status
 )
 
@@ -33,10 +33,15 @@ async def success_activation(point_id: int,
         status=False
     )
 
-    text = f'{point.upper()} была подорвана стороной {team}.'
-    for user_telegram_id in await get_users_telegram_id():
+    text = f'Оповещение для всех:\n\n' \
+           f'{point.upper()} была подорвана стороной {team.upper()}!'
 
-        await app.bot.send_message(chat_id=user_telegram_id, text=text)
+    for user in await get_users():
+        if user['in_game']:
+            await app.bot.send_message(
+                chat_id=user['telegram_id'],
+                text=text
+            )
 
 
 def sync_success_activation(*args):
