@@ -8,7 +8,7 @@ from telegram import (
     ReplyKeyboardMarkup,
 )
 
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, ConversationHandler
 
 from database.db_functions import get_teams, get_points
 
@@ -16,11 +16,11 @@ ADD_TEAM, EDIT_TEAM, DELETE_TEAM = map(chr, range(3))
 
 ADD_POINT, EDIT_POINT, DELETE_POINT = map(chr, range(3, 6))
 
-RESET_POINTS = map(chr, range(6, 7))
+BACK_TO_MENU = map(chr, range(6, 7))
 
 SHOW_ALL_USERS = map(chr, range(7, 8))
 
-MENU = map(chr, range(8, 9))
+END = ConversationHandler.END
 
 
 async def generate_buttons(prefix: str,
@@ -30,6 +30,7 @@ async def generate_buttons(prefix: str,
     lines = []
 
     for data in massive:
+        data.replace(' ', '_')
         if len(lines) < 3:
             lines.append(
                 InlineKeyboardButton(data.capitalize(),
@@ -69,7 +70,7 @@ async def admin_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("Reset Players, Points & Timers",
-                                 callback_data=str(RESET_POINTS)),
+                                 callback_data=str(BACK_TO_MENU)),
         ],
     ]
 
@@ -82,7 +83,7 @@ async def back_to_menu() -> InlineKeyboardMarkup:
     button = [
         [
             InlineKeyboardButton("Back to the Menu",
-                                 callback_data=str(MENU))
+                                 callback_data=str(END))
         ]
     ]
 
