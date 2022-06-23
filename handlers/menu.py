@@ -22,8 +22,12 @@ from settings.settings import CREATORS_ID, CREATORS_USERNAME
 from keyboards.keyboards import teams_keyboard, point_activation_keyboard
 
 from database.user.models import User
-from database.db_functions import get_teams, update_players_team, \
-    get_user_callsign
+from database.db_functions import (
+    get_teams,
+    update_players_team,
+    get_user_callsign,
+    update_users_in_game,
+)
 
 CREATE_OR_UPDATE_CALLSIGN, CHOOSING_TEAM_ACTION = map(chr, range(2))
 
@@ -186,8 +190,15 @@ async def choose_the_team(update: Update,
         callback_data = callback_data.lower()
 
         try:
+            user_id = update.callback_query.from_user.id
             await update_players_team(
-                int(update.callback_query.from_user.id), str(callback_data)
+                telegram_id=int(user_id),
+                team=str(callback_data)
+            )
+
+            await update_users_in_game(
+                telegram_id=user_id,
+                status=True
             )
 
             text = f'Выбрана сторона: {callback_data.capitalize()}'
