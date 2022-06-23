@@ -16,6 +16,7 @@ from database.user.models import (
 
 from database.db_functions import (
     reset_all_points,
+    reset_all_users,
     get_teams,
     delete_team,
     get_points,
@@ -48,6 +49,10 @@ END = ConversationHandler.END
 async def admin(update: Update,
                 context: CallbackContext.DEFAULT_TYPE) -> \
         SELECTING_ACTION:
+    # WIP Сейчас тут довольно костыльное решение с возвращением к админ меню.
+    # В будущем переделаю уровни вложенности диалогов.
+    # Переход к админ меню кнопкой Back to the Menu отображает загрузку сверху чата.
+    # Не пугаться, ошибок нет, все работает. Это и есть временное решение.
     try:
         user = update.message.from_user.id
         admin_status = await User.get_or_none(
@@ -553,12 +558,15 @@ async def restart_points(update: Update,
             thread.cancel()
 
     await reset_all_points()
+    await reset_all_users()
 
     text = 'Значения точек восстановлены по умолчанию.\n\n' \
-           'Таймеры активации точек сброшены.\n' \
-           'Все точки введены в игру.\n' \
-           'Таймер установлен на 20 минут.\n' \
-           'Точки не находятся под чьим-то контролем.'
+           'Таймеры активации точек сброшены.\n\n' \
+           'Все точки введены в игру.\n\n' \
+           'Таймер на точках установлен на 20 минут.\n\n' \
+           'Точки не находятся под чьим-то контролем.\n\n' \
+           'Всем пользователям удалена сторона (нужно выбрать ' \
+           'сторону заново), а так же сброшен статус In Game.'
 
     await update.callback_query.edit_message_text(
         text=text,
