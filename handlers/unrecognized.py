@@ -1,6 +1,6 @@
-import telegram.constants
 from telegram import Update
 from telegram.ext import CallbackContext
+from telegram.constants import ParseMode
 
 
 async def unrecognized_command(update: Update,
@@ -12,5 +12,5 @@ async def unrecognized_command(update: Update,
 
     await update.message.reply_text(
         text=text,
-        parse_mode=telegram.constants.ParseMode.HTML
+        parse_mode=ParseMode.HTML
     )
