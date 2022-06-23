@@ -1,21 +1,25 @@
 import re
 import string
 
-from telegram import (
-    Update,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
+from telegram import Update
+
+from telegram.ext import (
+    CallbackContext,
+    ConversationHandler,
+    ApplicationHandlerStop,
 )
 
-from telegram.ext import CallbackContext, ConversationHandler, ApplicationHandlerStop
-
-from tortoise.exceptions import IntegrityError, ValidationError, DoesNotExist
+from tortoise.exceptions import (
+    IntegrityError,
+    ValidationError,
+    DoesNotExist,
+)
 
 from transliterate import translit
 
 from settings.settings import CREATORS_ID, CREATORS_USERNAME
 
-from keyboards.keyboards import team_keyboard
+from keyboards.keyboards import teams_keyboard, point_activation_keyboard
 
 from database.user.models import User
 from database.db_functions import get_teams, update_players_team, \
@@ -69,11 +73,6 @@ async def callsign(update: Update,
 
 async def commit_callsign(update: Update,
                           context: CallbackContext.DEFAULT_TYPE) -> END:
-    button = [[KeyboardButton(text='АКТИВИРОВАТЬ ТОЧКУ',
-                              request_location=True)]]
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True,
-                                   keyboard=button)
-
     user = update.message.from_user.id
 
     users_text = update.message.text
@@ -94,7 +93,7 @@ async def commit_callsign(update: Update,
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
-            reply_markup=keyboard
+            reply_markup=await point_activation_keyboard()
         )
 
         raise ApplicationHandlerStop(END)
@@ -149,7 +148,7 @@ async def team(update: Update,
 
             save_data = await update.message.reply_text(
                 text=text,
-                reply_markup=await team_keyboard()
+                reply_markup=await teams_keyboard()
             )
 
             context.user_data['team_message_id'] = int(save_data.message_id)
