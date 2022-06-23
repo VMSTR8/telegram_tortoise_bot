@@ -1,13 +1,15 @@
 import re
 import string
 
+
 from telegram import Update
 
 from telegram.ext import (
     CallbackContext,
-    ConversationHandler,
     ApplicationHandlerStop,
 )
+
+from telegram.constants import ParseMode
 
 from tortoise.exceptions import (
     IntegrityError,
@@ -19,7 +21,11 @@ from transliterate import translit
 
 from settings.settings import CREATORS_ID, CREATORS_USERNAME
 
-from keyboards.keyboards import teams_keyboard, point_activation_keyboard
+from keyboards.keyboards import (
+    END,
+    teams_keyboard,
+    point_activation_keyboard,
+)
 
 from database.user.models import User
 from database.db_functions import (
@@ -31,29 +37,42 @@ from database.db_functions import (
 
 CREATE_OR_UPDATE_CALLSIGN, CHOOSING_TEAM_ACTION = map(chr, range(2))
 
-END = ConversationHandler.END
-
 
 async def start(update: Update,
                 context: CallbackContext.DEFAULT_TYPE) -> None:
+    """Инициализация бота и отправка приветственного сообщения пользователю."""
+
     user = update.message.from_user.id
 
     if user == int(CREATORS_ID):
         await User.get_or_create(telegram_id=user,
-                                 is_member=True,
                                  is_admin=True)
     else:
         await User.get_or_create(telegram_id=user)
+    greetings_text = f'Ну здорова, {update.message.from_user.name}.\n\n' \
+                     f'Это тренировочный бот, который завязан на ' \
+                     f'работе с геолокацией. На данный момент он ' \
+                     f'умеет активировать точки и... выводить их ' \
+                     f'из игры, оповещая при этом всех игроков на ' \
+                     f'полигоне. Для начала работы с ботом необходимо ' \
+                     f'пройти простую регистрацию.\n\n' \
+                     f'<b>Доступные пользовательские команды:</b>\n' \
+                     f'/callsign - регистрация своего позывного в боте\n' \
+                     f'/team - выбор игровой стороны\n\n' \
+                     f'<i>Создатель чат-бота: @vmstr8</i>'
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text='Тут приветственное сообщение'
+        text=greetings_text,
+        parse_mode=ParseMode.HTML
     )
 
 
 async def callsign(update: Update,
                    context: CallbackContext.DEFAULT_TYPE) -> \
         CREATE_OR_UPDATE_CALLSIGN:
+    """Начало регистрации пользователя в чат-боте."""
+
     user = update.message.from_user.id
 
     if user == int(CREATORS_ID):
@@ -64,7 +83,7 @@ async def callsign(update: Update,
 
     text = 'Введи свой позывной в текстовом поле и нажми отправить.\n\n' \
            'Позывной должен быть уникальным и на латинице, поэтому, если ' \
-           'он уже занят, то я тебя уведмлю об этом. ' \
+           'он уже занят, то я тебя уведомлю об этом. ' \
            'Так же в позывном нельзя использовать спец. символы, ' \
            'я их просто удалю.\n\n' \
            'Для отмены регистрации позывного напиши /cancel в чат.'
@@ -77,6 +96,10 @@ async def callsign(update: Update,
 
 async def commit_callsign(update: Update,
                           context: CallbackContext.DEFAULT_TYPE) -> END:
+    """Подтверждение позывного, который ввел пользователь. Если позывной
+    уже занят или возникла непредвиденная ошибка, бот предложит ввести
+    позывной еще раз."""
+
     user = update.message.from_user.id
 
     users_text = update.message.text
@@ -123,6 +146,8 @@ async def commit_callsign(update: Update,
 async def stop_callsign_handler(update: Update,
                                 context: CallbackContext.DEFAULT_TYPE) -> \
         END:
+    """Останавливает добавление позывного."""
+
     text = 'Обновление позывного отменено.'
 
     await context.bot.edit_message_text(
@@ -137,6 +162,7 @@ async def stop_callsign_handler(update: Update,
 async def team(update: Update,
                context: CallbackContext.DEFAULT_TYPE) -> \
         CHOOSING_TEAM_ACTION:
+    """Начало выбора пользователем игровой стороны."""
 
     teams = await get_teams()
 
@@ -183,6 +209,8 @@ async def team(update: Update,
 async def choose_the_team(update: Update,
                           context: CallbackContext.DEFAULT_TYPE) -> \
         END:
+    """Присваивает пользователю выбранную сторону."""
+
     await update.callback_query.answer()
 
     if await get_user_callsign(update.callback_query.from_user.id) is not None:
@@ -223,6 +251,8 @@ async def choose_the_team(update: Update,
 async def stop_team_handler(update: Update,
                             context: CallbackContext.DEFAULT_TYPE) -> \
         END:
+    """Останавливает выбор стороны."""
+
     text = 'Выбор стороны прекращен. Если нужно выбрать сторону, ' \
            'повторно введи /team в чат.'
     await context.bot.edit_message_text(
