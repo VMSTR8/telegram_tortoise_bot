@@ -85,7 +85,7 @@ async def point_activation(update: Update,
                 complete_status = True
 
                 out_of_game_text = f'Точка {point["point"].upper()} ' \
-                                   f'уже подорвана и выведена из игры.'
+                                   f'уже подорвана и выведена из игры!'
 
                 await message.reply_text(
                     text=out_of_game_text
