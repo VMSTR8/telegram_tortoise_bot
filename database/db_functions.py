@@ -87,3 +87,7 @@ async def reset_all_points() -> None:
             time=1200.0,
             team_id=None
         )
+
+
+async def delete_point(point_title: str) -> None:
+    await Location.filter(point=point_title).delete()
