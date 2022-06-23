@@ -17,7 +17,10 @@ from keyboards.keyboards import (
     ADD_TEAM,
     EDIT_TEAM,
     DELETE_TEAM,
+    ADD_POINT,
+    DELETE_POINT,
     RESET_POINTS,
+    MENU,
 )
 
 from handlers.menu import (
@@ -38,7 +41,10 @@ from handlers.admin_command import (
     ENTER_EDITING_TEAM,
     ENTER_TEAM_NEW_DATA,
     ENTER_DELETING_TEAM,
-    STOPPING,
+    ENTER_POINT,
+    ENTER_POINT_COORDINATES,
+    ENTER_DELETING_POINT,
+    BACK_TO_MENU,
     admin,
     adding_team,
     editing_team,
@@ -47,8 +53,13 @@ from handlers.admin_command import (
     commit_team,
     deleting_team,
     commit_deleting_team,
-    stop_admin_handler,
+    adding_point,
+    commit_point_name,
+    commit_point_coordinates,
     restart_points,
+    deleting_point,
+    commit_deleting_point,
+    stop_admin_handler,
 )
 
 from handlers.location import point_activation
@@ -111,6 +122,12 @@ if __name__ == '__main__':
             deleting_team, pattern="^" + str(DELETE_TEAM) + "$"
         ),
         CallbackQueryHandler(
+            adding_point, pattern="^" + str(ADD_POINT) + "$"
+        ),
+        CallbackQueryHandler(
+            deleting_point, pattern="^" + str(DELETE_POINT) + "$"
+        ),
+        CallbackQueryHandler(
             restart_points, pattern="^" + str(RESET_POINTS) + "$"
         ),
     ]
@@ -120,7 +137,7 @@ if __name__ == '__main__':
             SELECTING_ACTION: selection_handlers,
 
             ENTER_TEAM: [MessageHandler(
-                filters.TEXT & ~ filters.COMMAND, commit_team
+                filters.TEXT & (~ filters.COMMAND), commit_team
             )],
 
             ENTER_EDITING_TEAM: [CallbackQueryHandler(
@@ -129,14 +146,33 @@ if __name__ == '__main__':
             )],
 
             ENTER_TEAM_NEW_DATA: [MessageHandler(
-                filters.TEXT & ~ filters.COMMAND, update_team
+                filters.TEXT & (~ filters.COMMAND), update_team
             )],
 
             ENTER_DELETING_TEAM: [CallbackQueryHandler(
                 callback=commit_deleting_team,
                 pattern="^" + 'TEAM_COLOR_' + ".*$"
             )],
-            STOPPING: [CommandHandler('admin', admin)]
+
+            ENTER_POINT: [MessageHandler(
+                filters.TEXT & (~ filters.COMMAND), commit_point_name
+            )],
+
+            ENTER_POINT_COORDINATES: [MessageHandler(
+                filters.LOCATION | filters.TEXT & (~ filters.COMMAND),
+                commit_point_coordinates
+            )],
+
+            ENTER_DELETING_POINT: [CallbackQueryHandler(
+                callback=commit_deleting_point,
+                pattern="^" + 'POINT_' + ".*$"
+            )],
+
+            BACK_TO_MENU: [CallbackQueryHandler(
+                callback=admin,
+                pattern="^" + str(MENU) + "$"
+            )]
+
         },
         fallbacks=[MessageHandler(
             filters.COMMAND, stop_admin_handler
@@ -148,7 +184,7 @@ if __name__ == '__main__':
     )
 
     unrecognized_command_handler = MessageHandler(
-        filters.CHAT & (~ filters.COMMAND), unrecognized_command
+        filters.TEXT & (~ filters.COMMAND), unrecognized_command
     )
 
     application.add_handler(start_handler, 0)
