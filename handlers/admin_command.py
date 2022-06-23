@@ -4,7 +4,6 @@ import threading
 from telegram import Update
 from telegram.ext import (
     CallbackContext,
-    ConversationHandler,
     ApplicationHandlerStop,
 )
 
@@ -24,6 +23,8 @@ from database.db_functions import (
 )
 
 from keyboards.keyboards import (
+    BACK_TO_MENU,
+    END,
     query_teams_keyboard,
     query_points_keyboard,
     admin_keyboard,
@@ -41,18 +42,10 @@ from keyboards.keyboards import (
     ENTER_DELETING_POINT,
 ) = map(chr, range(8))
 
-BACK_TO_MENU = map(chr, range(8, 9))
-
-END = ConversationHandler.END
-
 
 async def admin(update: Update,
                 context: CallbackContext.DEFAULT_TYPE) -> \
         SELECTING_ACTION:
-    # WIP Сейчас тут довольно костыльное решение с возвращением к админ меню.
-    # В будущем переделаю уровни вложенности диалогов.
-    # Переход к админ меню кнопкой Back to the Menu отображает загрузку сверху чата.
-    # Не пугаться, ошибок нет, все работает. Это и есть временное решение.
     try:
         user = update.message.from_user.id
         admin_status = await User.get_or_none(
@@ -126,8 +119,8 @@ async def commit_team(update: Update,
     teams = await get_teams()
 
     text = update.message.text
-    text = re.sub(r'[^а-яА-Яa-zA-ZёЁ]', '', text)
-    text = text.lower().replace('ё', 'е')
+    text = ' '.join(text.lower().replace('ё', 'е').split())
+    text = re.sub(r'[^а-яА-Яa-zA-Z-\s]', '', text)
 
     if text in teams:
 
@@ -213,8 +206,8 @@ async def update_team(update: Update,
     teams = await get_teams()
 
     text = update.message.text
-    text = re.sub(r'[^а-яА-Яa-zA-ZёЁ]', '', text)
-    text = text.lower().replace('ё', 'е')
+    text = ' '.join(text.lower().replace('ё', 'е').split())
+    text = re.sub(r'[^а-яА-Яa-zA-Z-\s]', '', text)
 
     if text in teams:
         team_already_exists = 'Такая сторона уже существует.\n' \
@@ -322,8 +315,8 @@ async def commit_point_name(update: Update,
     points = [point.get('point') for point in await get_points()]
 
     text = update.message.text
-    text = re.sub(r'[^а-яА-Яa-zA-ZёЁ]', '', text)
-    text = text.lower().replace('ё', 'е')
+    text = ' '.join(text.lower().replace('ё', 'е').split())
+    text = re.sub(r'[^а-яА-Яa-zA-Z-\s]', '', text)
 
     if text in points:
         point_already_exist = 'Такая точка уже существует.\n' \
@@ -359,7 +352,6 @@ async def commit_point_name(update: Update,
 async def commit_point_coordinates(update: Update,
                                    context: CallbackContext.DEFAULT_TYPE) -> \
         SELECTING_ACTION:
-
     if update.message.location:
 
         await Location.get_or_create(
@@ -464,7 +456,8 @@ async def commit_point_coordinates(update: Update,
 
 
 async def deleting_point(update: Update,
-                         context: CallbackContext.DEFAULT_TYPE):
+                         context: CallbackContext.DEFAULT_TYPE) -> \
+        ENTER_DELETING_POINT:
     points = [point.get('point') for point in await get_points()]
 
     if points:
@@ -489,7 +482,8 @@ async def deleting_point(update: Update,
     
     
 async def commit_deleting_point(update: Update,
-                                context: CallbackContext.DEFAULT_TYPE):
+                                context: CallbackContext.DEFAULT_TYPE) -> \
+        SELECTING_ACTION:
     await update.callback_query.answer()
 
     points = [point.get('point') for point in await get_points()]
@@ -548,7 +542,8 @@ async def end(update: Update,
 
 
 async def restart_points(update: Update,
-                         context: CallbackContext.DEFAULT_TYPE):
+                         context: CallbackContext.DEFAULT_TYPE) -> \
+        BACK_TO_MENU:
     await update.callback_query.answer()
 
     points = [point.get('point') for point in await get_points()]
