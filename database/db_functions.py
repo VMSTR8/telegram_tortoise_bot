@@ -13,10 +13,23 @@ async def get_user_callsign(telegram_id: int) -> str:
         raise DoesNotExist
 
 
-async def get_users_telegram_id() -> List[int]:
-    telegram_id = await User.all().values('telegram_id')
-    list_of_telegram_id = [tg_id.get('telegram_id') for tg_id in telegram_id]
-    return list_of_telegram_id
+async def get_users() -> List[dict]:
+    telegram_id = await User.all().values()
+    return telegram_id
+
+
+async def update_users_in_game(telegram_id: int,
+                               status: bool) -> None:
+    await User.filter(telegram_id=telegram_id).update(in_game=status)
+
+
+async def reset_all_users() -> None:
+    users = await User.all().values()
+    for user in users:
+        await User.filter(id=user['id']).update(
+            in_game=False,
+            team_id=None
+        )
 
 
 async def get_teams() -> List[str]:
