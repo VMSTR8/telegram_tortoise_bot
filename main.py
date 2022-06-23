@@ -19,8 +19,8 @@ from keyboards.keyboards import (
     DELETE_TEAM,
     ADD_POINT,
     DELETE_POINT,
-    RESET_POINTS,
-    MENU,
+    BACK_TO_MENU,
+    END,
 )
 
 from handlers.menu import (
@@ -44,7 +44,6 @@ from handlers.admin_command import (
     ENTER_POINT,
     ENTER_POINT_COORDINATES,
     ENTER_DELETING_POINT,
-    BACK_TO_MENU,
     admin,
     adding_team,
     editing_team,
@@ -128,50 +127,42 @@ if __name__ == '__main__':
             deleting_point, pattern="^" + str(DELETE_POINT) + "$"
         ),
         CallbackQueryHandler(
-            restart_points, pattern="^" + str(RESET_POINTS) + "$"
+            restart_points, pattern="^" + str(BACK_TO_MENU) + "$"
         ),
     ]
     admin_handler = ConversationHandler(
         entry_points=[CommandHandler('admin', admin)],
         states={
             SELECTING_ACTION: selection_handlers,
-
+            BACK_TO_MENU: [CallbackQueryHandler(
+                callback=admin,
+                pattern="^" + str(END) + "$"
+            )],
             ENTER_TEAM: [MessageHandler(
                 filters.TEXT & (~ filters.COMMAND), commit_team
             )],
-
             ENTER_EDITING_TEAM: [CallbackQueryHandler(
                 callback=commit_editing_team,
                 pattern="^" + 'TEAM_COLOR_' + ".*$"
             )],
-
             ENTER_TEAM_NEW_DATA: [MessageHandler(
                 filters.TEXT & (~ filters.COMMAND), update_team
             )],
-
             ENTER_DELETING_TEAM: [CallbackQueryHandler(
                 callback=commit_deleting_team,
                 pattern="^" + 'TEAM_COLOR_' + ".*$"
             )],
-
             ENTER_POINT: [MessageHandler(
                 filters.TEXT & (~ filters.COMMAND), commit_point_name
             )],
-
             ENTER_POINT_COORDINATES: [MessageHandler(
                 filters.LOCATION | filters.TEXT & (~ filters.COMMAND),
                 commit_point_coordinates
             )],
-
             ENTER_DELETING_POINT: [CallbackQueryHandler(
                 callback=commit_deleting_point,
                 pattern="^" + 'POINT_' + ".*$"
             )],
-
-            BACK_TO_MENU: [CallbackQueryHandler(
-                callback=admin,
-                pattern="^" + str(MENU) + "$"
-            )]
 
         },
         fallbacks=[MessageHandler(
