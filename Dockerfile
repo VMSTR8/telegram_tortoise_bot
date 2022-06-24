@@ -10,6 +10,7 @@ FROM python:3.8.9-alpine
 
 COPY --from=base /bot /bot
 WORKDIR /bot
+
 RUN pip install --no-index --find-links=/bot/wheels -r requirements.txt
 
-CMD ["./entrypoint.sh"]
+ENTRYPOINT ["/bot/entrypoint.sh"]
