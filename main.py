@@ -48,7 +48,7 @@ from handlers.admin_command import (
     adding_team,
     editing_team,
     commit_editing_team,
-    update_team,
+    commit_update_team,
     commit_team,
     deleting_team,
     commit_deleting_team,
@@ -146,7 +146,7 @@ if __name__ == '__main__':
                 pattern="^" + 'TEAM_COLOR_' + ".*$"
             )],
             ENTER_TEAM_NEW_DATA: [MessageHandler(
-                filters.TEXT & (~ filters.COMMAND), update_team
+                filters.TEXT & (~ filters.COMMAND), commit_update_team
             )],
             ENTER_DELETING_TEAM: [CallbackQueryHandler(
                 callback=commit_deleting_team,
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     )
 
     unrecognized_command_handler = MessageHandler(
-        filters.TEXT & (~ filters.COMMAND), unrecognized_command
+        filters.TEXT | filters.COMMAND, unrecognized_command
     )
 
     application.add_handler(start_handler, 0)
