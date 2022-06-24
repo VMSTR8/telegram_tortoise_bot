@@ -1,7 +1,9 @@
 # Trash
-**/__pycache__/
+*/__pycache__/
 **/.DS_Store
 .idea/
+README.*
+tests
 
 # Enviroments
 venv/
@@ -10,13 +12,19 @@ venv/
 # Databases files
 db.*
 
+# Docker files
+database/decorator.py
+.github
+.dockerignore
+
 # Migration files
 migrations
 **.toml
 
 # Other files
-**.pytest_cache
 database/crud.py
 example_run.py
-**.yml
-database/decorator.py
+
+# Git
+.git
+.gitignore

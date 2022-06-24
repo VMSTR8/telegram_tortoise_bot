@@ -20,6 +20,7 @@ pycodestyle==2.8.0
 pydantic==1.9.1
 pyflakes==2.4.0
 pypika-tortoise==0.1.5
+pytest==7.1.2
 python-dotenv==0.20.0
 python-telegram-bot==20.0a0
 pytz==2022.1
@@ -30,6 +31,7 @@ sniffio==1.2.0
 tomlkit==0.11.0
 tornado==6.1
 tortoise-orm==0.19.1
+transliterate===1.10.2
 typing_extensions==4.2.0
 tzdata==2022.1
 tzlocal==4.2
