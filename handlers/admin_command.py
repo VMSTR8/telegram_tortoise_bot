@@ -65,7 +65,7 @@ async def admin(update: Update,
 
                 context.user_data['admin_message_id'] = int(save_data.message_id)
 
-                raise ApplicationHandlerStop(SELECTING_ACTION)
+                return SELECTING_ACTION
 
             else:
                 no_rights = 'У тебя нет админских прав ¯\_(ツ)_/¯'
@@ -73,7 +73,7 @@ async def admin(update: Update,
                     text=no_rights
                 )
 
-                raise ApplicationHandlerStop(END)
+                return END
 
         except TypeError:
             await update.message.reply_text(
@@ -81,7 +81,7 @@ async def admin(update: Update,
                      'введя команду /callsign'
             )
 
-            raise ApplicationHandlerStop(END)
+            return END
 
     except AttributeError:
         admin_text = 'Выбери один из пунктов меню.\n\n' \
@@ -95,7 +95,7 @@ async def admin(update: Update,
 
         context.user_data['admin_message_id'] = int(save_data.message_id)
 
-        raise ApplicationHandlerStop(SELECTING_ACTION)
+        return SELECTING_ACTION
 
 
 async def adding_team(update: Update,
@@ -111,7 +111,7 @@ async def adding_team(update: Update,
         text=text
     )
 
-    raise ApplicationHandlerStop(ENTER_TEAM)
+    return ENTER_TEAM
 
 
 async def commit_team(update: Update,
@@ -180,7 +180,7 @@ async def editing_team(update: Update,
             reply_markup=await query_teams_keyboard(update, context)
         )
 
-        raise ApplicationHandlerStop(ENTER_EDITING_TEAM)
+        return ENTER_EDITING_TEAM
 
     else:
         no_teams = 'Нет сторон, чтобы можно было что-то редактировать.'
@@ -190,7 +190,7 @@ async def editing_team(update: Update,
             reply_markup=await back_to_menu()
         )
 
-        raise ApplicationHandlerStop(BACK_TO_MENU)
+        return END
 
 
 async def commit_editing_team(update: Update,
@@ -213,7 +213,7 @@ async def commit_editing_team(update: Update,
         text=enter_new_titile
     )
 
-    raise ApplicationHandlerStop(ENTER_TEAM_NEW_DATA)
+    return ENTER_TEAM_NEW_DATA
 
 
 async def commit_update_team(update: Update,
@@ -283,7 +283,7 @@ async def deleting_team(update: Update,
             reply_markup=await query_teams_keyboard(update, context)
         )
 
-        raise ApplicationHandlerStop(ENTER_DELETING_TEAM)
+        return ENTER_DELETING_TEAM
 
     else:
         no_teams = 'Нет добавленных сторон. Нечего удалять.'
@@ -292,7 +292,7 @@ async def deleting_team(update: Update,
             reply_markup=await back_to_menu()
         )
 
-        raise ApplicationHandlerStop(BACK_TO_MENU)
+        return BACK_TO_MENU
 
 
 async def commit_deleting_team(update: Update,
@@ -326,7 +326,7 @@ async def commit_deleting_team(update: Update,
 
     context.user_data['admin_message_id'] = int(save_data.message_id)
 
-    raise ApplicationHandlerStop(SELECTING_ACTION)
+    return SELECTING_ACTION
 
 
 async def adding_point(update: Update,
@@ -342,7 +342,7 @@ async def adding_point(update: Update,
         text=adding_point_message
     )
 
-    raise ApplicationHandlerStop(ENTER_POINT)
+    return ENTER_POINT
 
 
 async def commit_point_name(update: Update,
@@ -523,7 +523,7 @@ async def deleting_point(update: Update,
             reply_markup=await query_points_keyboard(update, context)
         )
 
-        raise ApplicationHandlerStop(ENTER_DELETING_POINT)
+        return ENTER_DELETING_POINT
 
     else:
         no_points = 'Нет добавленных точек. Нечего удалять.'
@@ -532,7 +532,7 @@ async def deleting_point(update: Update,
             reply_markup=await back_to_menu()
         )
 
-        raise ApplicationHandlerStop(BACK_TO_MENU)
+        return BACK_TO_MENU
 
 
 async def commit_deleting_point(update: Update,
@@ -563,7 +563,7 @@ async def commit_deleting_point(update: Update,
 
     context.user_data['admin_message_id'] = int(save_data.message_id)
 
-    raise ApplicationHandlerStop(SELECTING_ACTION)
+    return SELECTING_ACTION
 
 
 async def stop_admin_handler(update: Update,
@@ -584,17 +584,8 @@ async def stop_admin_handler(update: Update,
     await update.effective_message.reply_text(
         text=admin_stop_reply_text
     )
-    raise ApplicationHandlerStop(END)
 
-
-async def end(update: Update,
-              context: CallbackContext.DEFAULT_TYPE) -> END:
-    await update.callback_query.answer()
-
-    text = 'Выполнение админских команд остановлено.'
-    await update.callback_query.edit_message_text(text=text)
-
-    raise ApplicationHandlerStop(END)
+    return END
 
 
 async def restart_points(update: Update,
@@ -624,4 +615,4 @@ async def restart_points(update: Update,
         reply_markup=await back_to_menu()
     )
 
-    raise ApplicationHandlerStop(BACK_TO_MENU)
+    return BACK_TO_MENU
