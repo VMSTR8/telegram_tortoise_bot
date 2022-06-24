@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.8"
       - name: Install dependency
-        run: python -m pip install tortoise-orm pytest
+        run: python -m pip install tortoise-orm pytest pytest-asyncio
       - name: Run tests
         run: python -m pytest tests/test_db.py --asyncio-mode=strict
       
