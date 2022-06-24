@@ -1,34 +1,34 @@
-# Telegram бот-ассистент для проведения игровых мероприятий
+# Telegram bot for organizing events using geolocation
 
-Бот создан для организации игровых мероприятий. Работает с геолокацией пользователей и предлагает различные игровые
-сценарии в зависимости от местонахождения игрока.
+The bot was created to organize gaming events (first of all - airsoft). It works with geolocation of users and offers 
+various game scenarios depending on the location of the player.
 
-На данный момент ведется активная разработка бота.
+At the moment, the bot is being actively developed.
 
-Стэк: [Python 3.8](https://www.python.org/), 
+Stack: [Python 3.8](https://www.python.org/), 
 [Python Telegram Bot](https://github.com/python-telegram-bot/python-telegram-bot), 
 [Tortoise ORM](https://tortoise-orm.readthedocs.io/en/latest/)
 
-## Начало работы с проектом
-В процессе наполнения
+## Getting started with the project
+In progress
 
-## Инициализация базы и миграции
-В процессе наполнения
+## Database initialization and migrations
+In progress
 
-## Запуск бота
-В процессе наполнения
+## Launching the bot
+In progress
 
 ## Roadmap
-- ✅: Регистрация пользовательского позывного
-- ✅: Присоединение к игровой стороне
-- ✅: Админ меню
-- ✅: (Для админа) Добавление, редактирование и удаление стороны
-- ✅: (Для админа) Добавление, ~~редактирование~~ и удаление точки (редактирование будет позже)
-- ❌: (Для админа) Вывод всех пользователей
-- ❌: (Для админа) Редактирование информации пользователя
-- ✅: Активация игровой точки
-- ❌: Возможность посмотреть, сколько осталось до вывода точки из игры
-- ❌: Проверка состояния точки (Активирована (и кем) | Не активирована)
-- ❌: Возможность вывода пользователем информации о себе
+- ✅: Registration of a user callsign
+- ✅: Joining the gaming side
+- ✅: Admin Menu
+- ✅: (For the admin) Adding, editing, and deleting a side
+- ✅: (For the admin) Adding, ~~editing~~, and deleting a point (editing will be done later)
+- ❌: (For the admin) View all users
+- ❌: (For the admin) Editing user information
+- ✅: Game Point Activation
+- ❌: Display information about the remaining time until the point is removed from the game
+- ❌: Checking the status of the point (Activated (and by whom) | Not activated)
+- ❌: The user's output of information about himself
 
-По мере работы над ботом в roadmap будет добавляться новый функционал, как уже реализованный, так и запланированный.
+As we work on the bot, new functionality will be added to the roadmap, both already implemented and planned.
