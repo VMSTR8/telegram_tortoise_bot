@@ -6,6 +6,7 @@ from telegram.ext import (
     CallbackContext,
     ApplicationHandlerStop,
 )
+from tortoise.exceptions import ValidationError
 
 from database.user.models import (
     User,
@@ -64,7 +65,7 @@ async def admin(update: Update,
 
                 context.user_data['admin_message_id'] = int(save_data.message_id)
 
-                return SELECTING_ACTION
+                raise ApplicationHandlerStop(SELECTING_ACTION)
 
             else:
                 no_rights = 'У тебя нет админских прав ¯\_(ツ)_/¯'
@@ -72,7 +73,7 @@ async def admin(update: Update,
                     text=no_rights
                 )
 
-                return END
+                raise ApplicationHandlerStop(END)
 
         except TypeError:
             await update.message.reply_text(
@@ -80,7 +81,7 @@ async def admin(update: Update,
                      'введя команду /callsign'
             )
 
-            return END
+            raise ApplicationHandlerStop(END)
 
     except AttributeError:
         admin_text = 'Выбери один из пунктов меню.\n\n' \
@@ -94,7 +95,7 @@ async def admin(update: Update,
 
         context.user_data['admin_message_id'] = int(save_data.message_id)
 
-        return SELECTING_ACTION
+        raise ApplicationHandlerStop(SELECTING_ACTION)
 
 
 async def adding_team(update: Update,
@@ -110,7 +111,7 @@ async def adding_team(update: Update,
         text=text
     )
 
-    return ENTER_TEAM
+    raise ApplicationHandlerStop(ENTER_TEAM)
 
 
 async def commit_team(update: Update,
@@ -119,33 +120,50 @@ async def commit_team(update: Update,
     teams = await get_teams()
 
     text = update.message.text
-    text = ' '.join(text.lower().replace('ё', 'е').split())
+    text = ' '.join(
+        text.lower().replace('ё', 'е').replace('\n', '').replace('\t', '').split()
+    )
     text = re.sub(r'[^а-яА-Яa-zA-Z-\s]', '', text)
 
-    if text in teams:
+    try:
+        if text in teams:
 
-        team_already_exists = 'Такая сторона уже существует.\n' \
-                              'Введи другое название.\n\n' \
-                              'Команда /stop остановит админ-меню.'
+            team_already_exists = 'Такая сторона уже существует.\n' \
+                                  'Введи другое название.\n\n' \
+                                  'Команда /stop остановит админ-меню.'
 
-        await update.message.reply_text(text=team_already_exists)
+            await update.message.reply_text(text=team_already_exists)
+
+            raise ApplicationHandlerStop(ENTER_TEAM)
+
+        else:
+
+            team_created = f'{text.capitalize()}, ' \
+                           f'принято и записано в базу данных.\n\n' \
+                           f'Нажми на /stop, чтобы остановить ' \
+                           f'выполнение админских команд.'
+
+            await Team.get_or_create(title=text)
+            save_data = await context.bot.send_message(
+                text=team_created,
+                chat_id=update.effective_chat.id,
+                reply_markup=await admin_keyboard()
+            )
+
+            context.user_data['admin_message_id'] = int(save_data.message_id)
+
+            raise ApplicationHandlerStop(SELECTING_ACTION)
+
+    except ValidationError:
+
+        empty_text = f'"{update.message.text}" было заменено на ' \
+                     f'"{text}", а название не может быть пустым.\n\n' \
+                     f'Введи другое название для стороны.\n\n' \
+                     f'Команда /stop остановит админ-меню.'
+
+        await update.message.reply_text(text=empty_text)
 
         raise ApplicationHandlerStop(ENTER_TEAM)
-
-    else:
-        team_created = f'{text.capitalize()}, ' \
-                       f'принято и записано в базу данных.'
-
-        await Team.get_or_create(title=text)
-        save_data = await context.bot.send_message(
-            text=team_created,
-            chat_id=update.effective_chat.id,
-            reply_markup=await admin_keyboard()
-        )
-
-        context.user_data['admin_message_id'] = int(save_data.message_id)
-
-        raise ApplicationHandlerStop(SELECTING_ACTION)
 
 
 async def editing_team(update: Update,
@@ -162,17 +180,17 @@ async def editing_team(update: Update,
             reply_markup=await query_teams_keyboard(update, context)
         )
 
-        return ENTER_EDITING_TEAM
+        raise ApplicationHandlerStop(ENTER_EDITING_TEAM)
 
     else:
         no_teams = 'Нет сторон, чтобы можно было что-то редактировать.'
 
         await update.callback_query.edit_message_text(
             text=no_teams,
-            reply_markup=await query_teams_keyboard(update, context)
+            reply_markup=await back_to_menu()
         )
 
-        return END
+        raise ApplicationHandlerStop(BACK_TO_MENU)
 
 
 async def commit_editing_team(update: Update,
@@ -195,45 +213,61 @@ async def commit_editing_team(update: Update,
         text=enter_new_titile
     )
 
-    return ENTER_TEAM_NEW_DATA
+    raise ApplicationHandlerStop(ENTER_TEAM_NEW_DATA)
 
 
-async def update_team(update: Update,
-                      context: CallbackContext.DEFAULT_TYPE) -> \
+async def commit_update_team(update: Update,
+                             context: CallbackContext.DEFAULT_TYPE) -> \
         END:
     saved_data = context.user_data['callback_data']
 
     teams = await get_teams()
 
     text = update.message.text
-    text = ' '.join(text.lower().replace('ё', 'е').split())
+    text = ' '.join(
+        text.lower().replace('ё', 'е').replace('\n', '').replace('\t', '').split()
+    )
     text = re.sub(r'[^а-яА-Яa-zA-Z-\s]', '', text)
 
-    if text in teams:
-        team_already_exists = 'Такая сторона уже существует.\n' \
-                              'Введи другое название.\n\n' \
-                              'Команда /stop остановит админ-меню.'
+    try:
+        if text in teams:
+            team_already_exists = 'Такая сторона уже существует.\n' \
+                                  'Введи другое название.\n\n' \
+                                  'Команда /stop остановит админ-меню.'
 
-        await update.message.reply_text(text=team_already_exists)
+            await update.message.reply_text(text=team_already_exists)
 
-        return ENTER_TEAM_NEW_DATA
+            raise ApplicationHandlerStop(ENTER_TEAM_NEW_DATA)
 
-    else:
-        await Team.filter(title=saved_data).update(title=text)
+        else:
+            await Team.filter(title=saved_data).update(title=text)
 
-        update_success = f'{saved_data.capitalize()} - название ' \
-                         f'изменено на {text.capitalize()}'
+            update_success = f'{saved_data.capitalize()} - название ' \
+                             f'изменено на {text.capitalize()}\n\n' \
+                             f'Нажми на /stop, чтобы остановить ' \
+                             f'выполнение админских команд.'
 
-        save_data = await context.bot.send_message(
-            text=update_success,
-            chat_id=update.effective_chat.id,
-            reply_markup=await admin_keyboard()
-        )
+            save_data = await context.bot.send_message(
+                text=update_success,
+                chat_id=update.effective_chat.id,
+                reply_markup=await admin_keyboard()
+            )
 
-        context.user_data.clear()
-        context.user_data['admin_message_id'] = int(save_data.message_id)
+            context.user_data.clear()
+            context.user_data['admin_message_id'] = int(save_data.message_id)
 
-        raise ApplicationHandlerStop(SELECTING_ACTION)
+            raise ApplicationHandlerStop(SELECTING_ACTION)
+
+    except ValidationError:
+
+        empty_text = f'"{update.message.text}" было заменено на ' \
+                     f'"{text}", а название не может быть пустым.\n\n' \
+                     f'Введи другое название для стороны.\n\n' \
+                     f'Команда /stop остановит админ-меню.'
+
+        await update.message.reply_text(text=empty_text)
+
+        raise ApplicationHandlerStop(ENTER_TEAM_NEW_DATA)
 
 
 async def deleting_team(update: Update,
@@ -249,7 +283,7 @@ async def deleting_team(update: Update,
             reply_markup=await query_teams_keyboard(update, context)
         )
 
-        return ENTER_DELETING_TEAM
+        raise ApplicationHandlerStop(ENTER_DELETING_TEAM)
 
     else:
         no_teams = 'Нет добавленных сторон. Нечего удалять.'
@@ -258,7 +292,7 @@ async def deleting_team(update: Update,
             reply_markup=await back_to_menu()
         )
 
-        return BACK_TO_MENU
+        raise ApplicationHandlerStop(BACK_TO_MENU)
 
 
 async def commit_deleting_team(update: Update,
@@ -281,7 +315,9 @@ async def commit_deleting_team(update: Update,
                      f'Предупредите участников этой стороны, что им требуется ' \
                      f'выбрать сторону заново. Ничего страшного не произойдет, ' \
                      f'если не предупредить, но вот будет неожиданость, когда ' \
-                     f'бот при активации точки скажет игроку "ты не выбрал сторону!"'
+                     f'бот при активации точки скажет игроку "ты не выбрал ' \
+                     f'сторону!"\n\n' \
+                     f'Нажми на /stop, чтобы остановить выполнение админских команд.'
 
     save_data = await update.callback_query.edit_message_text(
         text=delete_success,
@@ -290,7 +326,7 @@ async def commit_deleting_team(update: Update,
 
     context.user_data['admin_message_id'] = int(save_data.message_id)
 
-    return SELECTING_ACTION
+    raise ApplicationHandlerStop(SELECTING_ACTION)
 
 
 async def adding_point(update: Update,
@@ -306,7 +342,7 @@ async def adding_point(update: Update,
         text=adding_point_message
     )
 
-    return ENTER_POINT
+    raise ApplicationHandlerStop(ENTER_POINT)
 
 
 async def commit_point_name(update: Update,
@@ -315,38 +351,55 @@ async def commit_point_name(update: Update,
     points = [point.get('point') for point in await get_points()]
 
     text = update.message.text
-    text = ' '.join(text.lower().replace('ё', 'е').split())
+    text = ' '.join(
+        text.lower().replace('ё', 'е').replace('\n', '').replace('\t', '').split()
+    )
     text = re.sub(r'[^а-яА-Яa-zA-Z-\s]', '', text)
 
-    if text in points:
-        point_already_exist = 'Такая точка уже существует.\n' \
-                              'Введи другое название.\n\n' \
-                              'Команда /stop остановит админ-меню.'
+    try:
+        if text in points:
+            point_already_exist = 'Такая точка уже существует.\n' \
+                                  'Введи другое название.\n\n' \
+                                  'Команда /stop остановит админ-меню и добавление точки.'
+
+            await update.message.reply_text(
+                text=point_already_exist
+            )
+
+            raise ApplicationHandlerStop(ENTER_POINT)
+
+        else:
+            context.user_data['point_name'] = str(text)
+            point_name_confirm = f'{text.capitalize()} - навзание принято.\n\n' \
+                                 f'Переходим к добавлению координат.\n' \
+                                 f'Введи координаты в чат через запятую, например:\n' \
+                                 f'12.345678, 87.654321\n\n' \
+                                 f'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", эта кнопка ' \
+                                 f'в данный момент времени перешлет боту координаты ' \
+                                 f'и запишет их в базу.\n\n' \
+                                 f'P.S. Помни, если вводишь данные вручную, то ' \
+                                 f'широта и долгота должны быть больше ' \
+                                 f'-90.000000 и меньше 90.000000.\n\n' \
+                                 f'Команда /stop остановит добавление точки и админ-меню.'
+
+            await update.message.reply_text(
+                text=point_name_confirm,
+            )
+
+            raise ApplicationHandlerStop(ENTER_POINT_COORDINATES)
+
+    except ValidationError:
+
+        empty_text = f'"{update.message.text}" было заменено на ' \
+                     f'"{text}", а название не может быть пустым.\n\n' \
+                     f'Введи другое название для точки.\n\n' \
+                     f'Команда /stop остановит админ-меню.'
 
         await update.message.reply_text(
-            text=point_already_exist
+            text=empty_text
         )
 
         raise ApplicationHandlerStop(ENTER_POINT)
-
-    else:
-        context.user_data['point_name'] = str(text)
-        point_name_confirm = f'{text.capitalize()} - навзание принято.\n\n' \
-                             f'Переходим к добавлению координат.\n' \
-                             f'Введи координаты в чат через запятую, например:\n' \
-                             f'12.345678, 87.654321\n\n' \
-                             f'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", эта кнопка ' \
-                             f'в данный момент времени перешлет боту координаты ' \
-                             f'и запишет их в базу.\n\n' \
-                             f'P.S. Помни, если вводишь данные вручную, то ' \
-                             f'широта и долгота должны быть больше ' \
-                             f'-90.000000 и меньше 90.000000.'
-
-        await update.message.reply_text(
-            text=point_name_confirm,
-        )
-
-        raise ApplicationHandlerStop(ENTER_POINT_COORDINATES)
 
 
 async def commit_point_coordinates(update: Update,
@@ -364,7 +417,9 @@ async def commit_point_coordinates(update: Update,
                         f'Название: ' \
                         f'{context.user_data.get("point_name").capitalize()}\n' \
                         f'Широта: {update.message.location.latitude}\n' \
-                        f'Долгота: {update.message.location.longitude}'
+                        f'Долгота: {update.message.location.longitude}\n\n' \
+                        f'Нажми на /stop, чтобы остановить выполнение ' \
+                        f'админских команд.'
 
         save_data = await context.bot.send_message(
             text=point_confirm,
@@ -385,11 +440,7 @@ async def commit_point_coordinates(update: Update,
                     ' ', ''
                 ).split(',')
             ]
-
-            if len(coordinates) == 2 \
-                    and -90 < coordinates[0] < 90 \
-                    and -90 < coordinates[1] < 90:
-
+            try:
                 await Location.get_or_create(
                     point=context.user_data.get('point_name'),
                     latitude=coordinates[0],
@@ -418,7 +469,7 @@ async def commit_point_coordinates(update: Update,
 
                 raise ApplicationHandlerStop(SELECTING_ACTION)
 
-            else:
+            except ValidationError:
 
                 error_message = f'{text} не очень похоже на координаты.\n\n' \
                                 f'Введи координаты в чат через запятую, например:\n' \
@@ -428,7 +479,8 @@ async def commit_point_coordinates(update: Update,
                                 f'и запишет их в базу.\n\n' \
                                 f'P.S. Помни, если вводишь данные вручную, то ' \
                                 f'широта и долгота должны быть больше ' \
-                                f'-90.000000 и меньше 90.000000.'
+                                f'-90.000000 и меньше 90.000000.\n\n' \
+                                f'Команда /stop остановит добавление точки и админ-меню.'
 
                 await update.message.reply_text(
                     text=error_message,
@@ -438,7 +490,8 @@ async def commit_point_coordinates(update: Update,
 
         except ValueError:
 
-            error_message = f'Это не очень похоже на координаты.\n\n' \
+            error_message = f'Это похоже на координаты? Прочитай внимательно ' \
+                            f'инструкцию ниже и попробуй еще раз.\n\n' \
                             f'Введи координаты в чат через запятую, например:\n' \
                             f'12.345678, 87.654321\n\n' \
                             f'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", эта кнопка ' \
@@ -446,7 +499,8 @@ async def commit_point_coordinates(update: Update,
                             f'и запишет их в базу.\n\n' \
                             f'P.S. Помни, если вводишь данные вручную, то ' \
                             f'широта и долгота должны быть больше ' \
-                            f'-90.000000 и меньше 90.000000.'
+                            f'-90.000000 и меньше 90.000000.\n\n' \
+                            f'Команда /stop остановит добавление точки и админ-меню.'
 
             await update.message.reply_text(
                 text=error_message,
@@ -469,8 +523,8 @@ async def deleting_point(update: Update,
             reply_markup=await query_points_keyboard(update, context)
         )
 
-        return ENTER_DELETING_POINT
-    
+        raise ApplicationHandlerStop(ENTER_DELETING_POINT)
+
     else:
         no_points = 'Нет добавленных точек. Нечего удалять.'
         await update.callback_query.edit_message_text(
@@ -478,9 +532,9 @@ async def deleting_point(update: Update,
             reply_markup=await back_to_menu()
         )
 
-        return BACK_TO_MENU
-    
-    
+        raise ApplicationHandlerStop(BACK_TO_MENU)
+
+
 async def commit_deleting_point(update: Update,
                                 context: CallbackContext.DEFAULT_TYPE) -> \
         SELECTING_ACTION:
@@ -498,7 +552,9 @@ async def commit_deleting_point(update: Update,
     await delete_point(callback_data)
 
     delete_success = f'{callback_data.capitalize()} - точка удалена.\n' \
-                     f'Все таймеры подрыва точек сброшены.'
+                     f'Все таймеры подрыва точек сброшены.\n\n' \
+                     f'Нажми на /stop, чтобы остановить ' \
+                     f'выполнение админских команд.'
 
     save_data = await update.callback_query.edit_message_text(
         text=delete_success,
@@ -507,7 +563,7 @@ async def commit_deleting_point(update: Update,
 
     context.user_data['admin_message_id'] = int(save_data.message_id)
 
-    return SELECTING_ACTION
+    raise ApplicationHandlerStop(SELECTING_ACTION)
 
 
 async def stop_admin_handler(update: Update,
@@ -528,7 +584,7 @@ async def stop_admin_handler(update: Update,
     await update.effective_message.reply_text(
         text=admin_stop_reply_text
     )
-    return END
+    raise ApplicationHandlerStop(END)
 
 
 async def end(update: Update,
@@ -538,7 +594,7 @@ async def end(update: Update,
     text = 'Выполнение админских команд остановлено.'
     await update.callback_query.edit_message_text(text=text)
 
-    return END
+    raise ApplicationHandlerStop(END)
 
 
 async def restart_points(update: Update,
@@ -568,4 +624,4 @@ async def restart_points(update: Update,
         reply_markup=await back_to_menu()
     )
 
-    return BACK_TO_MENU
+    raise ApplicationHandlerStop(BACK_TO_MENU)
