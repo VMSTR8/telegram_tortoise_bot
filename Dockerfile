@@ -12,6 +12,4 @@ COPY --from=base /bot /bot
 WORKDIR /bot
 RUN pip install --no-index --find-links=/bot/wheels -r requirements.txt
 
-RUN aerich init -t database.config.TORTOISE_ORM && aerich init-db
-
-CMD ["python3", "main.py"]
+CMD ["./entrypoint.sh"]
