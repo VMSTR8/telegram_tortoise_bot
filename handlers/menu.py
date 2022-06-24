@@ -133,7 +133,7 @@ async def commit_callsign(update: Update,
 
         context.user_data['callsign_message_id'] = int(save_data.message_id)
 
-        return CREATE_OR_UPDATE_CALLSIGN
+        raise ApplicationHandlerStop(CREATE_OR_UPDATE_CALLSIGN)
 
     except ValidationError:
         text = f'Не особо это на позывной похоже, если честно.\n\n' \
@@ -145,7 +145,7 @@ async def commit_callsign(update: Update,
 
         context.user_data['callsign_message_id'] = int(save_data.message_id)
 
-        return CREATE_OR_UPDATE_CALLSIGN
+        raise ApplicationHandlerStop(CREATE_OR_UPDATE_CALLSIGN)
 
 
 async def stop_callsign_handler(update: Update,
