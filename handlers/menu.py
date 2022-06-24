@@ -91,7 +91,7 @@ async def callsign(update: Update,
 
     context.user_data['callsign_message_id'] = int(save_data.message_id)
 
-    return CREATE_OR_UPDATE_CALLSIGN
+    raise ApplicationHandlerStop(CREATE_OR_UPDATE_CALLSIGN)
 
 
 async def commit_callsign(update: Update,
@@ -129,18 +129,23 @@ async def commit_callsign(update: Update,
         text = 'Ошибка, такой позывной уже занят. Попробуй еще раз.\n\n' \
                'Напоминаю, если хочешь отменить регистрацию позывного, ' \
                'напиши /cancel в чат.'
-        await update.message.reply_text(text=text)
+        save_data = await update.message.reply_text(text=text)
 
-        return CREATE_OR_UPDATE_CALLSIGN
+        context.user_data['callsign_message_id'] = int(save_data.message_id)
+
+        raise ApplicationHandlerStop(CREATE_OR_UPDATE_CALLSIGN)
 
     except ValidationError:
         text = f'Не особо это на позывной похоже, если честно.\n\n' \
                f'Давай-ка, {update.message.from_user.name}, ' \
                f'все по новой. Ну или жми /cancel, чтобы отменить ' \
                f'регистрацию позывного.'
-        await update.message.reply_text(text=text)
 
-        return CREATE_OR_UPDATE_CALLSIGN
+        save_data = await update.message.reply_text(text=text)
+
+        context.user_data['callsign_message_id'] = int(save_data.message_id)
+
+        raise ApplicationHandlerStop(CREATE_OR_UPDATE_CALLSIGN)
 
 
 async def stop_callsign_handler(update: Update,
@@ -156,7 +161,7 @@ async def stop_callsign_handler(update: Update,
         message_id=context.user_data.get('callsign_message_id'),
     )
 
-    return END
+    raise ApplicationHandlerStop(END)
 
 
 async def team(update: Update,
@@ -183,7 +188,7 @@ async def team(update: Update,
 
             context.user_data['team_message_id'] = int(save_data.message_id)
 
-            return CHOOSING_TEAM_ACTION
+            raise ApplicationHandlerStop(CHOOSING_TEAM_ACTION)
 
         else:
             no_teams = f'Нет сторон, к которым можно примкнуть.\n' \
@@ -193,7 +198,7 @@ async def team(update: Update,
                 text=no_teams
             )
 
-            return END
+            raise ApplicationHandlerStop(END)
 
     except DoesNotExist:
         user_does_not_exist = 'Без понятия кто ты, пройди регистрацию, ' \
@@ -203,7 +208,7 @@ async def team(update: Update,
             text=user_does_not_exist
         )
 
-        return END
+        raise ApplicationHandlerStop(END)
 
 
 async def choose_the_team(update: Update,
@@ -232,20 +237,22 @@ async def choose_the_team(update: Update,
             text = f'Выбрана сторона: {callback_data.capitalize()}'
             await update.callback_query.edit_message_text(text=text)
 
+            raise ApplicationHandlerStop(END)
+
         except DoesNotExist:
             text = 'Что-то пошло не так. Скорее всего ты не ' \
                    'зарегистрирован(а). Можешь сделать это при ' \
                    'помощи команды /callsign'
             await update.callback_query.edit_message_text(text=text)
 
-        return END
+        raise ApplicationHandlerStop(END)
 
     else:
         text = 'Ты не зарегистрировал свой позывной в чат-боте.\n\n' \
                'Вспользуйся командой /callsign и введи свой позывной!'
         await update.callback_query.edit_message_text(text=text)
 
-        return END
+        raise ApplicationHandlerStop(END)
 
 
 async def stop_team_handler(update: Update,
@@ -261,4 +268,4 @@ async def stop_team_handler(update: Update,
         message_id=context.user_data.get('team_message_id')
     )
 
-    return END
+    raise ApplicationHandlerStop(END)
