@@ -1,5 +1,7 @@
 # Telegram bot for organizing events using geolocation
 
+Русская версия доступна тут: [README.ru.md](README.ru.md)
+
 The bot was created to organize gaming events (first of all - airsoft). It works with geolocation of users and offers 
 various game scenarios depending on the location of the player.
 
