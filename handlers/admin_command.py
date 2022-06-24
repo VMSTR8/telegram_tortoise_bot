@@ -190,7 +190,7 @@ async def editing_team(update: Update,
             reply_markup=await back_to_menu()
         )
 
-        return END
+        return BACK_TO_MENU
 
 
 async def commit_editing_team(update: Update,
@@ -356,7 +356,7 @@ async def commit_point_name(update: Update,
     )
     text = re.sub(r'[^а-яА-Яa-zA-Z-\s]', '', text)
 
-    try:
+    if text != '':
         if text in points:
             point_already_exist = 'Такая точка уже существует.\n' \
                                   'Введи другое название.\n\n' \
@@ -387,8 +387,7 @@ async def commit_point_name(update: Update,
             )
 
             raise ApplicationHandlerStop(ENTER_POINT_COORDINATES)
-
-    except ValidationError:
+    else:
 
         empty_text = f'"{update.message.text}" было заменено на ' \
                      f'"{text}", а название не может быть пустым.\n\n' \
