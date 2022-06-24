@@ -106,7 +106,7 @@ if __name__ == '__main__':
             ]
         },
         fallbacks=[MessageHandler(
-            filters.TEXT, stop_team_handler
+            filters.TEXT | filters.COMMAND, stop_team_handler
         )],
     )
 
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     )
 
     unrecognized_command_handler = MessageHandler(
-        filters.TEXT | filters.COMMAND, unrecognized_command
+        filters.TEXT & (~ filters.COMMAND), unrecognized_command
     )
 
     application.add_handler(start_handler, 0)
