@@ -1,4 +1,5 @@
 # Telegram бот-ассистент для проведения игровых мероприятий
+![workflow](https://github.com/VMSTR8/telegram_tortoise_bot/actions/workflows/docker-image.yml/badge.svg?branch=main)
 
 Бот создан для организации игровых мероприятий. Работает с геолокацией пользователей и предлагает различные игровые
 сценарии в зависимости от местонахождения игрока.
