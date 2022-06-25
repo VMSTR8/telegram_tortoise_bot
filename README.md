@@ -1,5 +1,5 @@
 # Telegram bot for organizing events using geolocation
-![workflow](https://github.com/VMSTR8/telegram_tortoise_bot/actions/workflows/docker-image.yml/badge.svg?branch=main)
+[![workflow](https://github.com/VMSTR8/telegram_tortoise_bot/actions/workflows/docker-image.yml/badge.svg)](https://github.com/VMSTR8/telegram_tortoise_bot/tree/main)
 
 Русская версия доступна тут: [README.ru.md](README.ru.md)
 
