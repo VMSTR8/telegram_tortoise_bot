@@ -25,6 +25,7 @@ from database.db_functions import (
 )
 
 
+@pytest.mark.usefixtures('initialize_test_db')
 class TestDataBaseFunctions(test.TestCase):
 
     @staticmethod
@@ -226,4 +227,4 @@ class TestDataBaseFunctions(test.TestCase):
         assert results[0]['time'] == 1200.0
         assert results[0]['team_id'] is None
         assert results[1]['in_game'] == 1
-        assert results[0]['team_id'] is None
+        assert results[1]['team_id'] is None
