@@ -72,7 +72,10 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-if __name__ == '__main__':
+
+def main() -> None:
+    """Start the bot."""
+
     # Init database connect
     run_async(init())
 
@@ -187,3 +190,7 @@ if __name__ == '__main__':
 
     # Run the app
     application.run_polling()
+
+
+if __name__ == '__main__':
+    main()
