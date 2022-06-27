@@ -44,7 +44,7 @@ async def success_activation(point_id: int,
             )
 
 
-def sync_success_activation(*args):
+def sync_success_activation(*args) -> None:
     asyncio.run(success_activation(*args))
 
 
