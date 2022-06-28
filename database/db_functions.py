@@ -104,3 +104,8 @@ async def reset_all_points() -> None:
 
 async def delete_point(point_title: str) -> None:
     await Location.filter(point=point_title).delete()
+
+
+async def get_point_info(point_title: str) -> dict:
+    point = await Location.get_or_none(point=point_title).values()
+    return point
