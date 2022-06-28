@@ -48,11 +48,10 @@ from keyboards.keyboards import (
     ENTER_POINT_COORDINATES,
     ENTER_DELETING_POINT,
     ENTER_EDITING_POINT_NAME,
-    ENTER_EDITING_POINT_LATITUDE,
-    ENTER_EDITING_POINT_LONGITUDE,
+    ENTER_EDITING_POINT_COORDINATE,
     ENTER_EDITING_POINT_TIME,
     ENTER_EDITING_POINT_RADIUS,
-) = map(chr, range(15))
+) = map(chr, range(14))
 
 
 def moderate_users_text(text: str) -> str:
@@ -748,7 +747,7 @@ async def editing_in_game_point(
 async def editing_point_latitude(
         update: Update,
         context: CallbackContext.DEFAULT_TYPE
-) -> ENTER_EDITING_POINT_LATITUDE:
+) -> ENTER_EDITING_POINT_COORDINATE:
     await update.callback_query.answer()
 
     point_name = context.user_data.get("callback_data")
@@ -765,79 +764,16 @@ async def editing_point_latitude(
     await update.callback_query.edit_message_text(
         text=enter_new_point_latitude,
     )
-    return ENTER_EDITING_POINT_LATITUDE
 
+    context.user_data['coordinate_type'] = 'latitude'
 
-async def commit_new_point_latitude(
-        update: Update,
-        context: CallbackContext.DEFAULT_TYPE
-) -> SELECTING_DATA_TO_CHANGE:
-    point_name = context.user_data.get("callback_data")
-
-    try:
-        text = update.message.text
-        text = float(text)
-
-        try:
-            await Location.filter(
-                point=point_name
-            ).update(latitude=text)
-
-            point_data = await point_message(point_name=point_name)
-
-            new_latitude_confirm = f'Широта была обновлена.\n' \
-                                   f'{point_data}'
-
-            save_data = await context.bot.send_message(
-                text=new_latitude_confirm,
-                chat_id=update.effective_chat.id,
-                reply_markup=await query_points_data_keyboard()
-            )
-
-            context.user_data['admin_message_id'] = int(
-                save_data.message_id
-            )
-
-            raise ApplicationHandlerStop(SELECTING_DATA_TO_CHANGE)
-
-        except ValidationError:
-
-            error_message = f'{text} не очень похоже на широту.\n\n' \
-                            f'Еще раз повторяю, что широта может быть ' \
-                            f'не меньше -90.000000 и не больше 90,000000.' \
-                            f'Команда /stop остановит добавление ' \
-                            f'точки и админ-меню.'
-
-            await update.message.reply_text(
-                text=error_message,
-            )
-
-            raise ApplicationHandlerStop(ENTER_EDITING_POINT_LATITUDE)
-
-    except ValueError:
-
-        error_message = 'Это не похоже на широту от слова совсем. ' \
-                        'Прочитай внимательно инструкцию и ' \
-                        'попробуй еще раз.\n\n' \
-                        f'Введи новую широту для точки ' \
-                        f'{point_name.capitalize()}.\n\n' \
-                        f'12.345678\n\n' \
-                        f'Помни, что широта не должна быть ' \
-                        f'меньше -90.000000 и больше 90.000000.\n\n' \
-                        f'Команда /stop остановит добавление ' \
-                        f'точки и админ-меню.'
-
-        await update.message.reply_text(
-            text=error_message,
-        )
-
-        raise ApplicationHandlerStop(ENTER_EDITING_POINT_LATITUDE)
+    return ENTER_EDITING_POINT_COORDINATE
 
 
 async def editing_point_longitude(
         update: Update,
         context: CallbackContext.DEFAULT_TYPE
-) -> ENTER_EDITING_POINT_LONGITUDE:
+) -> ENTER_EDITING_POINT_COORDINATE:
     await update.callback_query.answer()
 
     point_name = context.user_data.get("callback_data")
@@ -855,34 +791,53 @@ async def editing_point_longitude(
         text=enter_new_point_longitude,
     )
 
-    return ENTER_EDITING_POINT_LONGITUDE
+    context.user_data['coordinate_type'] = 'longitude'
+
+    return ENTER_EDITING_POINT_COORDINATE
 
 
-async def commit_new_point_longitude(
+async def commit_new_point_coordinate(
         update: Update,
         context: CallbackContext.DEFAULT_TYPE
 ) -> SELECTING_DATA_TO_CHANGE:
     point_name = context.user_data.get("callback_data")
-
+    coordinate_type = context.user_data.get('coordinate_type')
     try:
         text = update.message.text
         text = float(text)
 
         try:
-            await Location.filter(
-                point=point_name
-            ).update(longitude=text)
+            if coordinate_type == 'latitude':
+                await Location.filter(
+                    point=point_name
+                ).update(latitude=text)
 
-            point_data = await point_message(point_name=point_name)
+                point_data = await point_message(point_name=point_name)
 
-            new_longitude_confirm = f'Долгота была обновлена.\n' \
-                                    f'{point_data}'
+                new_longitude_confirm = f'Широта была обновлена.\n' \
+                                        f'{point_data}'
 
-            save_data = await context.bot.send_message(
-                text=new_longitude_confirm,
-                chat_id=update.effective_chat.id,
-                reply_markup=await query_points_data_keyboard()
-            )
+                save_data = await context.bot.send_message(
+                    text=new_longitude_confirm,
+                    chat_id=update.effective_chat.id,
+                    reply_markup=await query_points_data_keyboard()
+                )
+
+            else:
+                await Location.filter(
+                    point=point_name
+                ).update(longitude=text)
+
+                point_data = await point_message(point_name=point_name)
+
+                new_longitude_confirm = f'Долгота была обновлена.\n' \
+                                        f'{point_data}'
+
+                save_data = await context.bot.send_message(
+                    text=new_longitude_confirm,
+                    chat_id=update.effective_chat.id,
+                    reply_markup=await query_points_data_keyboard()
+                )
 
             context.user_data['admin_message_id'] = int(
                 save_data.message_id
@@ -892,8 +847,8 @@ async def commit_new_point_longitude(
 
         except ValidationError:
 
-            error_message = f'{text} не очень похоже на долготу.\n\n' \
-                            f'Еще раз повторяю, что долгота может быть ' \
+            error_message = f'{text} не очень похоже на координату.\n\n' \
+                            f'Еще раз повторяю, что координата может быть ' \
                             f'не меньше -90.000000 и не больше 90,000000.' \
                             f'Команда /stop остановит добавление ' \
                             f'точки и админ-меню.'
@@ -902,16 +857,15 @@ async def commit_new_point_longitude(
                 text=error_message,
             )
 
-            raise ApplicationHandlerStop(ENTER_EDITING_POINT_LONGITUDE)
+            raise ApplicationHandlerStop(ENTER_EDITING_POINT_COORDINATE)
 
     except ValueError:
 
-        error_message = 'Это не похоже на долготу от слова совсем. ' \
+        error_message = 'Это не похоже на координату от слова совсем. ' \
                         'Прочитай внимательно инструкцию и ' \
                         'попробуй еще раз.\n\n' \
-                        f'Введи новую широту для точки ' \
+                        f'Введи новую координату для точки ' \
                         f'{point_name.capitalize()}.\n\n' \
-                        f'12.345678\n\n' \
                         f'Помни, что широта не должна быть ' \
                         f'меньше -90.000000 и больше 90.000000.\n\n' \
                         f'Команда /stop остановит добавление ' \
@@ -921,7 +875,7 @@ async def commit_new_point_longitude(
             text=error_message,
         )
 
-        raise ApplicationHandlerStop(ENTER_EDITING_POINT_LONGITUDE)
+        raise ApplicationHandlerStop(ENTER_EDITING_POINT_COORDINATE)
 
 
 async def editing_point_time(
@@ -1142,27 +1096,33 @@ async def commit_deleting_point(
     return END
 
 
+async def close_and_stop(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> None:
+    admin_stop_edit_message = 'Выполнение админских команд остановлено.'
+
+    admin_stop_reply_text = 'Админ-меню было закрыто.\n' \
+                            'Выполнение админских команд остановлено.\n' \
+                            'Для повторного вызова введи команду:\n/admin.'
+
+    await context.bot.edit_message_text(
+        text=admin_stop_edit_message,
+        chat_id=update.effective_chat.id,
+        message_id=context.user_data.get('admin_message_id')
+    )
+
+    await update.effective_message.reply_text(
+        text=admin_stop_reply_text
+    )
+
+
 async def stop_admin_handler(
         update: Update,
         context: CallbackContext.DEFAULT_TYPE
 ) -> END:
     try:
-        admin_stop_edit_message = 'Выполнение админских команд остановлено.'
-
-        admin_stop_reply_text = 'Админ-меню было закрыто.\n' \
-                                'Выполнение админских команд остановлено.\n' \
-                                'Для повторного вызова введи команду:\n/admin.'
-
-        await context.bot.edit_message_text(
-            text=admin_stop_edit_message,
-            chat_id=update.effective_chat.id,
-            message_id=context.user_data.get('admin_message_id')
-        )
-
-        await update.effective_message.reply_text(
-            text=admin_stop_reply_text
-        )
-
+        await close_and_stop(update, context)
         return END
 
     except BadRequest:
@@ -1175,22 +1135,7 @@ async def stop_nested_admin_handler(
         context: CallbackContext.DEFAULT_TYPE
 ) -> END:
     try:
-        admin_stop_edit_message = 'Выполнение админских команд остановлено.'
-
-        admin_stop_reply_text = 'Админ-меню было закрыто.\n' \
-                                'Выполнение админских команд остановлено.\n' \
-                                'Для повторного вызова введи команду:\n/admin.'
-
-        await context.bot.edit_message_text(
-            text=admin_stop_edit_message,
-            chat_id=update.effective_chat.id,
-            message_id=context.user_data.get('admin_message_id')
-        )
-
-        await update.effective_message.reply_text(
-            text=admin_stop_reply_text
-        )
-
+        await close_and_stop(update, context)
         return STOPPING
 
     except BadRequest:
