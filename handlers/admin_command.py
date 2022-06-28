@@ -2,6 +2,7 @@ import re
 import threading
 
 from telegram import Update
+from telegram.error import BadRequest
 from telegram.ext import (
     CallbackContext,
     ApplicationHandlerStop,
@@ -91,9 +92,10 @@ async def point_message(point_name: str) -> str:
     return point_data_message
 
 
-async def admin(update: Update,
-                context: CallbackContext.DEFAULT_TYPE) -> \
-        SELECTING_ACTION:
+async def admin(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_ACTION:
     try:
         user = update.message.from_user.id
         admin_status = await User.get_or_none(
@@ -147,9 +149,10 @@ async def admin(update: Update,
         return SELECTING_ACTION
 
 
-async def adding_team(update: Update,
-                      context: CallbackContext.DEFAULT_TYPE) -> \
-        ENTER_TEAM:
+async def adding_team(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_TEAM:
     text = 'Введи название стороны. Например: желтые.\n\n' \
            'Помни, что название должно быть уникальным.\n' \
            'Команда /stop отменит создание сотороны.'
@@ -163,9 +166,10 @@ async def adding_team(update: Update,
     return ENTER_TEAM
 
 
-async def commit_team(update: Update,
-                      context: CallbackContext.DEFAULT_TYPE) -> \
-        SELECTING_ACTION:
+async def commit_team(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_ACTION:
     teams = await get_teams()
 
     team_name = moderate_users_text(text=update.message.text)
@@ -212,14 +216,17 @@ async def commit_team(update: Update,
         raise ApplicationHandlerStop(ENTER_TEAM)
 
 
-async def editing_team(update: Update,
-                       context: CallbackContext.DEFAULT_TYPE) -> \
-        ENTER_EDITING_TEAM:
+async def editing_team(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_EDITING_TEAM:
     teams = await get_teams()
 
     if teams:
-        edit_team_text = 'Выбери сторону, название которой хочешь изменить:\n\n' \
-                         'Нажми на /stop, чтобы остановить выполнение админских команд.'
+        edit_team_text = 'Выбери сторону, название которой ' \
+                         'хочешь изменить:\n\n' \
+                         'Нажми на /stop, чтобы остановить ' \
+                         'выполнение админских команд.'
 
         await update.callback_query.edit_message_text(
             text=edit_team_text,
@@ -239,9 +246,10 @@ async def editing_team(update: Update,
         return BACK
 
 
-async def commit_editing_team(update: Update,
-                              context: CallbackContext.DEFAULT_TYPE) -> \
-        ENTER_TEAM_NEW_DATA:
+async def commit_editing_team(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_TEAM_NEW_DATA:
     await update.callback_query.answer()
 
     callback_data = re.sub(r'^TEAM_COLOR_', '', update.callback_query.data)
@@ -251,9 +259,9 @@ async def commit_editing_team(update: Update,
 
     enter_new_titile = f'Вбей в текстовое поле новое название ' \
                        f'для стороны "{callback_data.capitalize()}".\n\n' \
-                       f'Для остановки обновления названия стороны и ' \
-                       f'остановки админских команд используй команду:\n' \
-                       f'/stop'
+                       f'Команда /stop остановит обновление ' \
+                       f'названия стороны и остановит выполнение ' \
+                       f'адимнских команд.'
 
     await update.callback_query.edit_message_text(
         text=enter_new_titile
@@ -298,7 +306,7 @@ async def commit_update_team(update: Update,
 
             context.user_data['admin_message_id'] = int(save_data.message_id)
 
-            raise ApplicationHandlerStop(SELECTING_ACTION)
+            raise ApplicationHandlerStop(END)
 
     except ValidationError:
 
@@ -313,13 +321,17 @@ async def commit_update_team(update: Update,
         raise ApplicationHandlerStop(ENTER_TEAM_NEW_DATA)
 
 
-async def deleting_team(update: Update,
-                        context: CallbackContext.DEFAULT_TYPE):
+async def deleting_team(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> BACK:
     teams = await get_teams()
 
     if teams:
-        edit_teams_text = 'Выбери сторону, которую необходимо удалить:\n\n' \
-                          'Нажми на /stop, чтобы остановить выполнение админских команд.'
+        edit_teams_text = 'Выбери сторону, которую ' \
+                          'необходимо удалить:\n\n' \
+                          'Нажми на /stop, чтобы ' \
+                          'остановить выполнение админских команд.'
 
         await update.callback_query.edit_message_text(
             text=edit_teams_text,
@@ -338,8 +350,10 @@ async def deleting_team(update: Update,
         return BACK
 
 
-async def commit_deleting_team(update: Update,
-                               context: CallbackContext.DEFAULT_TYPE):
+async def commit_deleting_team(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> END:
     await update.callback_query.answer()
 
     points = [point.get('point') for point in await get_points()]
@@ -355,12 +369,17 @@ async def commit_deleting_team(update: Update,
 
     delete_success = f'{callback_data.capitalize()} - сторона удалена.\n' \
                      f'Все таймеры подрыва точек сброшены.\n\n' \
-                     f'Предупредите участников этой стороны, что им требуется ' \
-                     f'выбрать сторону заново. Ничего страшного не произойдет, ' \
-                     f'если не предупредить, но вот будет неожиданость, когда ' \
-                     f'бот при активации точки скажет игроку "ты не выбрал ' \
+                     f'Предупредите участников этой стороны, ' \
+                     f'что им требуется ' \
+                     f'выбрать сторону заново. Ничего страшного ' \
+                     f'не произойдет, ' \
+                     f'если не предупредить, но вот будет ' \
+                     f'неожиданость, когда ' \
+                     f'бот при активации точки скажет игроку ' \
+                     f'"ты не выбрал ' \
                      f'сторону!"\n\n' \
-                     f'Нажми на /stop, чтобы остановить выполнение админских команд.'
+                     f'Нажми на /stop, чтобы остановить ' \
+                     f'выполнение админских команд.'
 
     save_data = await update.callback_query.edit_message_text(
         text=delete_success,
@@ -369,17 +388,19 @@ async def commit_deleting_team(update: Update,
 
     context.user_data['admin_message_id'] = int(save_data.message_id)
 
-    return SELECTING_ACTION
+    return END
 
 
-async def adding_point(update: Update,
-                       context: CallbackContext.DEFAULT_TYPE) -> \
-        ENTER_POINT:
+async def adding_point(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_POINT:
     await update.callback_query.answer()
 
     adding_point_message = 'Введи название новой точки. Например: Альфа\n\n' \
                            'Помни, название должно быть уникальным.\n' \
-                           'Команда /stop остановит админ-меню и добавление точки.'
+                           'Команда /stop остановит админ-меню и ' \
+                           'добавление точки.'
 
     await update.callback_query.edit_message_text(
         text=adding_point_message
@@ -388,9 +409,10 @@ async def adding_point(update: Update,
     return ENTER_POINT
 
 
-async def commit_point_name(update: Update,
-                            context: CallbackContext.DEFAULT_TYPE) -> \
-        ENTER_POINT_COORDINATES:
+async def commit_point_name(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_POINT_COORDINATES:
     points = [point.get('point') for point in await get_points()]
 
     point_name = moderate_users_text(text=update.message.text)
@@ -399,7 +421,8 @@ async def commit_point_name(update: Update,
         if point_name in points:
             point_already_exist = 'Такая точка уже существует.\n' \
                                   'Введи другое название.\n\n' \
-                                  'Команда /stop остановит админ-меню и добавление точки.'
+                                  'Команда /stop остановит админ-меню и ' \
+                                  'добавление точки.'
 
             await update.message.reply_text(
                 text=point_already_exist
@@ -409,17 +432,23 @@ async def commit_point_name(update: Update,
 
         else:
             context.user_data['point_name'] = str(point_name)
-            point_name_confirm = f'{point_name.capitalize()} - название принято.\n\n' \
+            point_name_confirm = f'{point_name.capitalize()} - ' \
+                                 f'название принято.\n\n' \
                                  f'Переходим к добавлению координат.\n' \
-                                 f'Введи координаты в чат через запятую, например:\n' \
+                                 f'Введи координаты в чат через ' \
+                                 f'запятую, например:\n' \
                                  f'12.345678, 87.654321\n\n' \
-                                 f'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", эта кнопка ' \
-                                 f'в данный момент времени перешлет боту координаты ' \
+                                 f'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", ' \
+                                 f'эта кнопка ' \
+                                 f'в данный момент времени перешлет ' \
+                                 f'боту координаты ' \
                                  f'и запишет их в базу.\n\n' \
-                                 f'P.S. Помни, если вводишь данные вручную, то ' \
+                                 f'P.S. Помни, если вводишь данные ' \
+                                 f'вручную, то ' \
                                  f'широта и долгота должны быть меньше ' \
                                  f'-90.000000 и больше 90.000000.\n\n' \
-                                 f'Команда /stop остановит добавление точки и админ-меню.'
+                                 f'Команда /stop остановит ' \
+                                 f'добавление точки и админ-меню.'
 
             await update.message.reply_text(
                 text=point_name_confirm,
@@ -440,9 +469,10 @@ async def commit_point_name(update: Update,
         raise ApplicationHandlerStop(ENTER_POINT)
 
 
-async def commit_point_coordinates(update: Update,
-                                   context: CallbackContext.DEFAULT_TYPE) -> \
-        SELECTING_ACTION:
+async def commit_point_coordinates(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_ACTION:
     if update.message.location:
 
         await Location.get_or_create(
@@ -450,10 +480,10 @@ async def commit_point_coordinates(update: Update,
             latitude=update.message.location.latitude,
             longitude=update.message.location.longitude
         )
-
+        point_name = context.user_data.get("point_name").capitalize()
         point_confirm = f'Точка создана.\n\n' \
                         f'Название: ' \
-                        f'{context.user_data.get("point_name").capitalize()}\n' \
+                        f'{point_name}\n' \
                         f'Широта: {update.message.location.latitude}\n' \
                         f'Долгота: {update.message.location.longitude}\n\n' \
                         f'Нажми на /stop, чтобы остановить выполнение ' \
@@ -509,16 +539,22 @@ async def commit_point_coordinates(update: Update,
 
             except ValidationError:
 
-                error_message = f'{text} не очень похоже на координаты.\n\n' \
-                                f'Введи координаты в чат через запятую, например:\n' \
+                error_message = f'{text} не очень похоже ' \
+                                f'на координаты.\n\n' \
+                                f'Введи координаты в чат ' \
+                                f'через запятую, например:\n' \
                                 f'12.345678, 87.654321\n\n' \
-                                f'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", эта кнопка ' \
-                                f'в данный момент времени перешлет боту координаты ' \
+                                f'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", ' \
+                                f'эта кнопка ' \
+                                f'в данный момент времени ' \
+                                f'перешлет боту координаты ' \
                                 f'и запишет их в базу.\n\n' \
-                                f'P.S. Помни, если вводишь данные вручную, то ' \
+                                f'P.S. Помни, если вводишь данные ' \
+                                f'вручную, то ' \
                                 f'широта и долгота должны быть меньше ' \
                                 f'-90.000000 и больше 90.000000.\n\n' \
-                                f'Команда /stop остановит добавление точки и админ-меню.'
+                                f'Команда /stop остановит добавление ' \
+                                f'точки и админ-меню.'
 
                 await update.message.reply_text(
                     text=error_message,
@@ -528,17 +564,20 @@ async def commit_point_coordinates(update: Update,
 
         except ValueError:
 
-            error_message = f'Это похоже на координаты? Прочитай внимательно ' \
-                            f'инструкцию ниже и попробуй еще раз.\n\n' \
-                            f'Введи координаты в чат через запятую, например:\n' \
-                            f'12.345678, 87.654321\n\n' \
-                            f'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", эта кнопка ' \
-                            f'в данный момент времени перешлет боту координаты ' \
-                            f'и запишет их в базу.\n\n' \
-                            f'P.S. Помни, если вводишь данные вручную, то ' \
-                            f'широта и долгота должны быть меньше ' \
-                            f'-90.000000 и больше 90.000000.\n\n' \
-                            f'Команда /stop остановит добавление точки и админ-меню.'
+            error_message = 'Это похоже на координаты? Прочитай внимательно ' \
+                            'инструкцию ниже и попробуй еще раз.\n\n' \
+                            'Введи координаты в чат через запятую, ' \
+                            'например:\n' \
+                            '12.345678, 87.654321\n\n' \
+                            'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", эта кнопка ' \
+                            'в данный момент времени перешлет ' \
+                            'боту координаты ' \
+                            'и запишет их в базу.\n\n' \
+                            'P.S. Помни, если вводишь данные вручную, то ' \
+                            'широта и долгота должны быть меньше ' \
+                            '-90.000000 и больше 90.000000.\n\n' \
+                            'Команда /stop остановит добавление точки ' \
+                            'и админ-меню.'
 
             await update.message.reply_text(
                 text=error_message,
@@ -547,15 +586,20 @@ async def commit_point_coordinates(update: Update,
             raise ApplicationHandlerStop(ENTER_POINT_COORDINATES)
 
 
-async def editing_point(update: Update,
-                        context: CallbackContext.DEFAULT_TYPE):
+async def editing_point(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_POINT:
     await update.callback_query.answer()
 
     points = [point.get('point') for point in await get_points()]
 
     if points:
-        editing_point_message = 'Выбери точку, которую хочешь отредактировать:\n\n' \
-                                'Нажми на /stop, чтобы остановить выполнение админских команд.'
+        editing_point_message = 'Выбери точку, которую хочешь ' \
+                                'отредактировать:\n\n' \
+                                'Нажми на /stop, чтобы ' \
+                                'остановить выполнение ' \
+                                'админских команд.'
 
         await update.callback_query.edit_message_text(
             text=editing_point_message,
@@ -574,8 +618,10 @@ async def editing_point(update: Update,
         return BACK
 
 
-async def entering_editing_point(update: Update,
-                                 context: CallbackContext.DEFAULT_TYPE):
+async def entering_editing_point(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_DATA_TO_CHANGE:
     await update.callback_query.answer()
 
     callback_data = re.sub(r'^POINT_', '', update.callback_query.data)
@@ -593,17 +639,19 @@ async def entering_editing_point(update: Update,
     return SELECTING_DATA_TO_CHANGE
 
 
-async def editing_point_name(update: Update,
-                             context: CallbackContext.DEFAULT_TYPE):
+async def editing_point_name(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_EDITING_POINT_NAME:
     await update.callback_query.answer()
 
     point_name = context.user_data.get("callback_data")
 
     enter_new_point_name = f'Вбей в текстовое поле новое название ' \
                            f'для точки "{point_name.capitalize()}".\n\n' \
-                           f'Для остановки обновления названия точки и ' \
-                           f'остановки админских команд используй команду:\n' \
-                           f'/stop'
+                           f'Команда /stop остановит обновление ' \
+                           f'названия стороны и остановит выполнение ' \
+                           f'адимнских команд.'
 
     await update.callback_query.edit_message_text(
         text=enter_new_point_name
@@ -611,8 +659,10 @@ async def editing_point_name(update: Update,
     return ENTER_EDITING_POINT_NAME
 
 
-async def commit_new_point_name(update: Update,
-                                context: CallbackContext.DEFAULT_TYPE):
+async def commit_new_point_name(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_DATA_TO_CHANGE:
     points = [point.get('point') for point in await get_points()]
 
     point_name = context.user_data.get("callback_data")
@@ -629,7 +679,11 @@ async def commit_new_point_name(update: Update,
             raise ApplicationHandlerStop(ENTER_EDITING_POINT_NAME)
 
         else:
-            await Location.filter(point=point_name).update(point=new_point_name)
+            await Location.filter(
+                point=point_name
+            ).update(
+                point=new_point_name
+            )
 
             point_data = await point_message(new_point_name)
 
@@ -662,8 +716,10 @@ async def commit_new_point_name(update: Update,
         raise ApplicationHandlerStop(ENTER_EDITING_POINT_NAME)
 
 
-async def editing_in_game_point(update: Update,
-                                context: CallbackContext.DEFAULT_TYPE):
+async def editing_in_game_point(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_DATA_TO_CHANGE:
     await update.callback_query.answer()
 
     point_name = context.user_data.get("callback_data")
@@ -689,8 +745,10 @@ async def editing_in_game_point(update: Update,
     return SELECTING_DATA_TO_CHANGE
 
 
-async def editing_point_latitude(update: Update,
-                                 context: CallbackContext.DEFAULT_TYPE):
+async def editing_point_latitude(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_EDITING_POINT_LATITUDE:
     await update.callback_query.answer()
 
     point_name = context.user_data.get("callback_data")
@@ -710,8 +768,10 @@ async def editing_point_latitude(update: Update,
     return ENTER_EDITING_POINT_LATITUDE
 
 
-async def commit_new_point_latitude(update: Update,
-                                    context: CallbackContext.DEFAULT_TYPE):
+async def commit_new_point_latitude(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_DATA_TO_CHANGE:
     point_name = context.user_data.get("callback_data")
 
     try:
@@ -757,7 +817,8 @@ async def commit_new_point_latitude(update: Update,
     except ValueError:
 
         error_message = 'Это не похоже на широту от слова совсем. ' \
-                        'Прочитай внимательно инструкцию и попробуй еще раз.\n\n' \
+                        'Прочитай внимательно инструкцию и ' \
+                        'попробуй еще раз.\n\n' \
                         f'Введи новую широту для точки ' \
                         f'{point_name.capitalize()}.\n\n' \
                         f'12.345678\n\n' \
@@ -773,8 +834,10 @@ async def commit_new_point_latitude(update: Update,
         raise ApplicationHandlerStop(ENTER_EDITING_POINT_LATITUDE)
 
 
-async def editing_point_longitude(update: Update,
-                                  context: CallbackContext.DEFAULT_TYPE):
+async def editing_point_longitude(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_EDITING_POINT_LONGITUDE:
     await update.callback_query.answer()
 
     point_name = context.user_data.get("callback_data")
@@ -795,8 +858,10 @@ async def editing_point_longitude(update: Update,
     return ENTER_EDITING_POINT_LONGITUDE
 
 
-async def commit_new_point_longitude(update: Update,
-                                     context: CallbackContext.DEFAULT_TYPE):
+async def commit_new_point_longitude(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_DATA_TO_CHANGE:
     point_name = context.user_data.get("callback_data")
 
     try:
@@ -842,7 +907,8 @@ async def commit_new_point_longitude(update: Update,
     except ValueError:
 
         error_message = 'Это не похоже на долготу от слова совсем. ' \
-                        'Прочитай внимательно инструкцию и попробуй еще раз.\n\n' \
+                        'Прочитай внимательно инструкцию и ' \
+                        'попробуй еще раз.\n\n' \
                         f'Введи новую широту для точки ' \
                         f'{point_name.capitalize()}.\n\n' \
                         f'12.345678\n\n' \
@@ -858,15 +924,18 @@ async def commit_new_point_longitude(update: Update,
         raise ApplicationHandlerStop(ENTER_EDITING_POINT_LONGITUDE)
 
 
-async def editing_point_time(update: Update,
-                             context: CallbackContext.DEFAULT_TYPE):
+async def editing_point_time(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_EDITING_POINT_TIME:
     await update.callback_query.answer()
 
     point_name = context.user_data.get("callback_data")
 
     enter_new_time = f'Вбей в текстовое поле новое время подрыва ' \
                      f'для точки "{point_name.capitalize()}" в минутах.\n' \
-                     f'Учти, нельзя устанавливать таймер меньше 1 минуты.\n\n' \
+                     f'Учти, нельзя устанавливать таймер меньше ' \
+                     f'1 минуты.\n\n' \
                      f'Нажми на /stop, чтобы остановить выполнение ' \
                      f'админских команд.'
 
@@ -877,8 +946,10 @@ async def editing_point_time(update: Update,
     return ENTER_EDITING_POINT_TIME
 
 
-async def commit_new_point_time(update: Update,
-                                context: CallbackContext.DEFAULT_TYPE):
+async def commit_new_point_time(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_DATA_TO_CHANGE:
     time = update.message.text
     point_name = context.user_data.get("callback_data")
 
@@ -931,15 +1002,18 @@ async def commit_new_point_time(update: Update,
         raise ApplicationHandlerStop(ENTER_EDITING_POINT_TIME)
 
 
-async def editing_point_radius(update: Update,
-                               context: CallbackContext.DEFAULT_TYPE):
+async def editing_point_radius(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_EDITING_POINT_RADIUS:
     await update.callback_query.answer()
 
     point_name = context.user_data.get("callback_data")
 
     enter_new_radius = f'Вбей в текстовое поле новый радиус ' \
                        f'для точки "{point_name.capitalize()}" в метрах.\n' \
-                       f'Учти, нельзя устанавливать радиус меньше 1 метра.\n\n' \
+                       f'Учти, нельзя устанавливать радиус меньше ' \
+                       f'1 метра.\n\n' \
                        f'Нажми на /stop, чтобы остановить выполнение ' \
                        f'админских команд.'
 
@@ -950,8 +1024,10 @@ async def editing_point_radius(update: Update,
     return ENTER_EDITING_POINT_RADIUS
 
 
-async def commit_new_point_radius(update: Update,
-                                  context: CallbackContext.DEFAULT_TYPE):
+async def commit_new_point_radius(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_DATA_TO_CHANGE:
     radius = update.message.text
     point_name = context.user_data.get("callback_data")
 
@@ -1004,16 +1080,18 @@ async def commit_new_point_radius(update: Update,
         raise ApplicationHandlerStop(ENTER_EDITING_POINT_RADIUS)
 
 
-async def deleting_point(update: Update,
-                         context: CallbackContext.DEFAULT_TYPE) -> \
-        ENTER_DELETING_POINT:
+async def deleting_point(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_DELETING_POINT:
     await update.callback_query.answer()
 
     points = [point.get('point') for point in await get_points()]
 
     if points:
         edit_points_text = 'Выбери точку, которую необходимо удалить:\n\n' \
-                           'Нажми на /stop, чтобы остановить выполнение админских команд.'
+                           'Нажми на /stop, чтобы остановить ' \
+                           'выполнение админских команд.'
 
         await update.callback_query.edit_message_text(
             text=edit_points_text,
@@ -1032,9 +1110,10 @@ async def deleting_point(update: Update,
         return BACK
 
 
-async def commit_deleting_point(update: Update,
-                                context: CallbackContext.DEFAULT_TYPE) -> \
-        SELECTING_ACTION:
+async def commit_deleting_point(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_ACTION:
     await update.callback_query.answer()
 
     points = [point.get('point') for point in await get_points()]
@@ -1060,52 +1139,63 @@ async def commit_deleting_point(update: Update,
 
     context.user_data['admin_message_id'] = int(save_data.message_id)
 
-    return SELECTING_ACTION
-
-
-async def stop_admin_handler(update: Update,
-                             context: CallbackContext.DEFAULT_TYPE) -> \
-        END:
-    admin_stop_edit_message = 'Выполнение админских команд остановлено.'
-
-    admin_stop_reply_text = 'Админ-меню было закрыто.\n' \
-                            'Выполнение админских команд остановлено.\n' \
-                            'Для повторного вызова введи команду:\n/admin.'
-
-    await context.bot.edit_message_text(
-        text=admin_stop_edit_message,
-        chat_id=update.effective_chat.id,
-        message_id=context.user_data.get('admin_message_id')
-    )
-
-    await update.effective_message.reply_text(
-        text=admin_stop_reply_text
-    )
-
     return END
+
+
+async def stop_admin_handler(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> END:
+    try:
+        admin_stop_edit_message = 'Выполнение админских команд остановлено.'
+
+        admin_stop_reply_text = 'Админ-меню было закрыто.\n' \
+                                'Выполнение админских команд остановлено.\n' \
+                                'Для повторного вызова введи команду:\n/admin.'
+
+        await context.bot.edit_message_text(
+            text=admin_stop_edit_message,
+            chat_id=update.effective_chat.id,
+            message_id=context.user_data.get('admin_message_id')
+        )
+
+        await update.effective_message.reply_text(
+            text=admin_stop_reply_text
+        )
+
+        return END
+
+    except BadRequest:
+
+        return END
 
 
 async def stop_nested_admin_handler(
         update: Update,
         context: CallbackContext.DEFAULT_TYPE
 ) -> END:
-    admin_stop_edit_message = 'Выполнение админских команд остановлено.'
+    try:
+        admin_stop_edit_message = 'Выполнение админских команд остановлено.'
 
-    admin_stop_reply_text = 'Админ-меню было закрыто.\n' \
-                            'Выполнение админских команд остановлено.\n' \
-                            'Для повторного вызова введи команду:\n/admin.'
+        admin_stop_reply_text = 'Админ-меню было закрыто.\n' \
+                                'Выполнение админских команд остановлено.\n' \
+                                'Для повторного вызова введи команду:\n/admin.'
 
-    await context.bot.edit_message_text(
-        text=admin_stop_edit_message,
-        chat_id=update.effective_chat.id,
-        message_id=context.user_data.get('admin_message_id')
-    )
+        await context.bot.edit_message_text(
+            text=admin_stop_edit_message,
+            chat_id=update.effective_chat.id,
+            message_id=context.user_data.get('admin_message_id')
+        )
 
-    await update.effective_message.reply_text(
-        text=admin_stop_reply_text
-    )
+        await update.effective_message.reply_text(
+            text=admin_stop_reply_text
+        )
 
-    return STOPPING
+        return STOPPING
+
+    except BadRequest:
+
+        return STOPPING
 
 
 async def end_editing_point(
@@ -1117,9 +1207,19 @@ async def end_editing_point(
     return END
 
 
-async def restart_points(update: Update,
-                         context: CallbackContext.DEFAULT_TYPE) -> \
-        BACK:
+async def end_second_level_conv(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> END:
+    await admin(update, context)
+
+    return END
+
+
+async def restart_points(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> BACK:
     await update.callback_query.answer()
 
     points = [point.get('point') for point in await get_points()]
