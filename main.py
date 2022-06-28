@@ -18,8 +18,17 @@ from keyboards.keyboards import (
     EDIT_TEAM,
     DELETE_TEAM,
     ADD_POINT,
+    EDIT_POINT,
     DELETE_POINT,
-    BACK_TO_MENU,
+    POINT_NAME,
+    POINT_STATUS,
+    POINT_LATITUDE,
+    POINT_LONGITUDE,
+    POINT_TIME,
+    POINT_RADIUS,
+    RESET_ALL,
+    STOPPING,
+    BACK,
     END,
 )
 
@@ -37,6 +46,8 @@ from handlers.menu import (
 
 from handlers.admin_command import (
     SELECTING_ACTION,
+    SELECTING_POINT,
+    SELECTING_DATA_TO_CHANGE,
     ENTER_TEAM,
     ENTER_EDITING_TEAM,
     ENTER_TEAM_NEW_DATA,
@@ -44,6 +55,11 @@ from handlers.admin_command import (
     ENTER_POINT,
     ENTER_POINT_COORDINATES,
     ENTER_DELETING_POINT,
+    ENTER_EDITING_POINT_NAME,
+    ENTER_EDITING_POINT_LATITUDE,
+    ENTER_EDITING_POINT_LONGITUDE,
+    ENTER_EDITING_POINT_TIME,
+    ENTER_EDITING_POINT_RADIUS,
     admin,
     adding_team,
     editing_team,
@@ -56,9 +72,24 @@ from handlers.admin_command import (
     commit_point_name,
     commit_point_coordinates,
     restart_points,
+    editing_point,
+    entering_editing_point,
+    editing_point_name,
+    editing_in_game_point,
+    editing_point_latitude,
+    editing_point_longitude,
+    editing_point_time,
+    editing_point_radius,
+    commit_new_point_name,
+    commit_new_point_latitude,
+    commit_new_point_longitude,
+    commit_new_point_time,
+    commit_new_point_radius,
     deleting_point,
     commit_deleting_point,
     stop_admin_handler,
+    stop_nested_admin_handler,
+    end_editing_point,
 )
 
 from handlers.location import point_activation
@@ -113,7 +144,100 @@ def main() -> None:
         )],
     )
 
+    point_data_handler = [
+        CallbackQueryHandler(
+            editing_point_name, pattern="^" + str(POINT_NAME) + "$"
+        ),
+        CallbackQueryHandler(
+            editing_in_game_point, pattern="^" + str(POINT_STATUS) + "$"
+        ),
+        CallbackQueryHandler(
+            editing_point_latitude, pattern="^" + str(POINT_LATITUDE) + "$"
+        ),
+        CallbackQueryHandler(
+            editing_point_longitude, pattern="^" + str(POINT_LONGITUDE) + "$"
+        ),
+        CallbackQueryHandler(
+            editing_point_time, pattern="^" + str(POINT_TIME) + "$"
+        ),
+        CallbackQueryHandler(
+            editing_point_radius, pattern="^" + str(POINT_RADIUS) + "$"
+        ),
+    ]
+    point_conv = ConversationHandler(
+        entry_points=[CallbackQueryHandler(
+            entering_editing_point,
+            pattern="^" + 'POINT_' + ".*$"
+        )
+        ],
+        states={
+            SELECTING_DATA_TO_CHANGE: point_data_handler,
+            ENTER_EDITING_POINT_NAME: [
+                MessageHandler(
+                    filters.TEXT & (~ filters.COMMAND),
+                    commit_new_point_name
+                )
+            ],
+            ENTER_EDITING_POINT_LATITUDE: [
+                MessageHandler(
+                    filters.TEXT & (~ filters.COMMAND),
+                    commit_new_point_latitude
+                )
+            ],
+            ENTER_EDITING_POINT_LONGITUDE: [
+                MessageHandler(
+                    filters.TEXT & (~ filters.COMMAND),
+                    commit_new_point_longitude
+                )
+            ],
+            ENTER_EDITING_POINT_TIME: [
+                MessageHandler(
+                    filters.TEXT & (~ filters.COMMAND),
+                    commit_new_point_time
+                )
+            ],
+            ENTER_EDITING_POINT_RADIUS: [
+                MessageHandler(
+                    filters.TEXT & (~ filters.COMMAND),
+                    commit_new_point_radius
+                )
+            ],
+        },
+        fallbacks=[
+            MessageHandler(
+                filters.COMMAND, stop_nested_admin_handler
+            ),
+            CallbackQueryHandler(
+                end_editing_point, pattern="^" + str(END) + "$"
+            )
+        ],
+        map_to_parent={
+            END: SELECTING_POINT,
+            STOPPING: STOPPING
+        }
+    )
+
+    second_level_conv = ConversationHandler(
+        entry_points=[
+            CallbackQueryHandler(
+                editing_point,
+                pattern="^" + str(EDIT_POINT) + "$"
+            )
+        ],
+        states={
+            SELECTING_POINT: [point_conv]
+        },
+        fallbacks=[MessageHandler(
+            filters.COMMAND, stop_nested_admin_handler
+        )],
+        map_to_parent={
+            END: SELECTING_ACTION,
+            STOPPING: END
+        }
+    )
+
     selection_handlers = [
+        second_level_conv,
         CallbackQueryHandler(
             adding_team, pattern="^" + str(ADD_TEAM) + "$"
         ),
@@ -130,14 +254,14 @@ def main() -> None:
             deleting_point, pattern="^" + str(DELETE_POINT) + "$"
         ),
         CallbackQueryHandler(
-            restart_points, pattern="^" + str(BACK_TO_MENU) + "$"
+            restart_points, pattern="^" + str(RESET_ALL) + "$"
         ),
     ]
     admin_handler = ConversationHandler(
         entry_points=[CommandHandler('admin', admin)],
         states={
             SELECTING_ACTION: selection_handlers,
-            BACK_TO_MENU: [CallbackQueryHandler(
+            BACK: [CallbackQueryHandler(
                 callback=admin,
                 pattern="^" + str(END) + "$"
             )],
