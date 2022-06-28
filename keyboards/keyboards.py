@@ -35,7 +35,8 @@ END = ConversationHandler.END
 
 
 async def generate_buttons(prefix: str,
-                           massive: list) -> \
+                           massive: list,
+                           trigger: bool) -> \
         List[List[InlineKeyboardButton]]:
     buttons = []
     lines = []
@@ -57,8 +58,14 @@ async def generate_buttons(prefix: str,
                                          f'{prefix}_{data.upper()}'
                                      ))
             ]
+    back_button = [InlineKeyboardButton(
+        "⬅️: Назад в меню",
+        callback_data=str(END)
+    )]
 
     buttons.append(lines)
+    if trigger:
+        buttons.append(back_button)
 
     return buttons
 
@@ -95,7 +102,7 @@ async def admin_keyboard() -> InlineKeyboardMarkup:
 async def back() -> InlineKeyboardMarkup:
     button = [
         [
-            InlineKeyboardButton("⬅️: Назад",
+            InlineKeyboardButton("⬅️: Назад в меню",
                                  callback_data=str(END))
         ]
     ]
@@ -143,17 +150,17 @@ async def query_teams_keyboard(update: Update,
     teams = await get_teams()
 
     keyboard = InlineKeyboardMarkup(
-        await generate_buttons('TEAM_COLOR', teams)
+        await generate_buttons('TEAM_COLOR', teams, trigger=True)
     )
 
     return keyboard
 
 
-async def teams_keyboard() -> InlineKeyboardMarkup:
+async def teams_keyboard(trigger: bool) -> InlineKeyboardMarkup:
     teams = await get_teams()
 
     keyboard = InlineKeyboardMarkup(
-        await generate_buttons('TEAM_COLOR', teams)
+        await generate_buttons('TEAM_COLOR', teams, trigger)
     )
 
     return keyboard
@@ -176,7 +183,7 @@ async def query_points_keyboard(update: Update,
     points = [point.get('point') for point in await get_points()]
 
     keyboard = InlineKeyboardMarkup(
-        await generate_buttons('POINT', points)
+        await generate_buttons('POINT', points, trigger=True)
     )
 
     return keyboard
