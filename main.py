@@ -90,6 +90,7 @@ from handlers.admin_command import (
     stop_admin_handler,
     stop_nested_admin_handler,
     end_editing_point,
+    end_second_level_conv,
 )
 
 from handlers.location import point_activation
@@ -222,14 +223,43 @@ def main() -> None:
             CallbackQueryHandler(
                 editing_point,
                 pattern="^" + str(EDIT_POINT) + "$"
-            )
+            ),
+            CallbackQueryHandler(
+                editing_team, pattern="^" + str(EDIT_TEAM) + "$"
+            ),
+            CallbackQueryHandler(
+                deleting_team, pattern="^" + str(DELETE_TEAM) + "$"
+            ),
+            CallbackQueryHandler(
+                deleting_point, pattern="^" + str(DELETE_POINT) + "$"
+            ),
         ],
         states={
-            SELECTING_POINT: [point_conv]
+            SELECTING_POINT: [point_conv],
+            ENTER_EDITING_TEAM: [CallbackQueryHandler(
+                callback=commit_editing_team,
+                pattern="^" + 'TEAM_COLOR_' + ".*$"
+            )],
+            ENTER_TEAM_NEW_DATA: [MessageHandler(
+                filters.TEXT & (~ filters.COMMAND), commit_update_team
+            )],
+            ENTER_DELETING_TEAM: [CallbackQueryHandler(
+                callback=commit_deleting_team,
+                pattern="^" + 'TEAM_COLOR_' + ".*$"
+            )],
+            ENTER_DELETING_POINT: [CallbackQueryHandler(
+                callback=commit_deleting_point,
+                pattern="^" + 'POINT_' + ".*$"
+            )],
         },
-        fallbacks=[MessageHandler(
-            filters.COMMAND, stop_nested_admin_handler
-        )],
+        fallbacks=[
+            MessageHandler(
+                filters.COMMAND, stop_nested_admin_handler
+            ),
+            CallbackQueryHandler(
+                end_second_level_conv, pattern="^" + str(END) + "$"
+            )
+        ],
         map_to_parent={
             END: SELECTING_ACTION,
             STOPPING: END
@@ -242,16 +272,7 @@ def main() -> None:
             adding_team, pattern="^" + str(ADD_TEAM) + "$"
         ),
         CallbackQueryHandler(
-            editing_team, pattern="^" + str(EDIT_TEAM) + "$"
-        ),
-        CallbackQueryHandler(
-            deleting_team, pattern="^" + str(DELETE_TEAM) + "$"
-        ),
-        CallbackQueryHandler(
             adding_point, pattern="^" + str(ADD_POINT) + "$"
-        ),
-        CallbackQueryHandler(
-            deleting_point, pattern="^" + str(DELETE_POINT) + "$"
         ),
         CallbackQueryHandler(
             restart_points, pattern="^" + str(RESET_ALL) + "$"
@@ -268,17 +289,6 @@ def main() -> None:
             ENTER_TEAM: [MessageHandler(
                 filters.TEXT & (~ filters.COMMAND), commit_team
             )],
-            ENTER_EDITING_TEAM: [CallbackQueryHandler(
-                callback=commit_editing_team,
-                pattern="^" + 'TEAM_COLOR_' + ".*$"
-            )],
-            ENTER_TEAM_NEW_DATA: [MessageHandler(
-                filters.TEXT & (~ filters.COMMAND), commit_update_team
-            )],
-            ENTER_DELETING_TEAM: [CallbackQueryHandler(
-                callback=commit_deleting_team,
-                pattern="^" + 'TEAM_COLOR_' + ".*$"
-            )],
             ENTER_POINT: [MessageHandler(
                 filters.TEXT & (~ filters.COMMAND), commit_point_name
             )],
@@ -286,11 +296,6 @@ def main() -> None:
                 filters.LOCATION | filters.TEXT & (~ filters.COMMAND),
                 commit_point_coordinates
             )],
-            ENTER_DELETING_POINT: [CallbackQueryHandler(
-                callback=commit_deleting_point,
-                pattern="^" + 'POINT_' + ".*$"
-            )],
-
         },
         fallbacks=[MessageHandler(
             filters.COMMAND, stop_admin_handler
