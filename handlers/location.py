@@ -2,6 +2,7 @@ import asyncio
 import threading
 
 from telegram import Update
+from telegram.error import Forbidden
 from telegram.ext import CallbackContext, ApplicationBuilder
 
 from geopy import distance
@@ -38,10 +39,13 @@ async def success_activation(point_id: int,
 
     for user in await get_users():
         if user['in_game']:
-            await app.bot.send_message(
-                chat_id=user['telegram_id'],
-                text=text
-            )
+            try:
+                await app.bot.send_message(
+                    chat_id=user['telegram_id'],
+                    text=text
+                )
+            except Forbidden:
+                continue
 
 
 def sync_success_activation(*args) -> None:
@@ -66,7 +70,6 @@ async def point_activation(update: Update,
                 'lng': message.location.longitude
             }
         ]
-        radius = 10
 
         user_point_tuple = tuple(user_point[0].values())
 
@@ -79,7 +82,7 @@ async def point_activation(update: Update,
             point_tuple = (point['latitude'], point['longitude'])
             dis = distance.distance(point_tuple, user_point_tuple).m
 
-            if int(dis) <= radius and \
+            if int(dis) <= point['radius'] and \
                     not await get_points_in_game_status(point_id=point['id']):
 
                 complete_status = True
@@ -91,7 +94,7 @@ async def point_activation(update: Update,
                     text=out_of_game_text
                 )
 
-            elif int(dis) <= radius and point['team_id'] != team_id:
+            elif int(dis) <= point['radius'] and point['team_id'] != team_id:
 
                 timer = threading.Timer(
                     interval=await get_point_time(point_id=point['id']),
@@ -121,7 +124,7 @@ async def point_activation(update: Update,
 
                 await message.reply_text(text=activation_text)
 
-            elif int(dis) <= radius and point['team_id'] == team_id:
+            elif int(dis) <= point['radius'] and point['team_id'] == team_id:
                 complete_status = True
 
                 already_active_text = 'Точка уже активирована ' \
