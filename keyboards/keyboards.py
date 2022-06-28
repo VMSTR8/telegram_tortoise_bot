@@ -16,9 +16,20 @@ ADD_TEAM, EDIT_TEAM, DELETE_TEAM = map(chr, range(3))
 
 ADD_POINT, EDIT_POINT, DELETE_POINT = map(chr, range(3, 6))
 
-BACK_TO_MENU = map(chr, range(6, 7))
+(
+    POINT_NAME,
+    POINT_STATUS,
+    POINT_LATITUDE,
+    POINT_LONGITUDE,
+    POINT_TIME,
+    POINT_RADIUS
+) = map(chr, range(6, 12))
 
-SHOW_ALL_USERS = map(chr, range(7, 8))
+RESET_ALL = map(chr, range(12, 13))
+
+BACK = map(chr, range(13, 14))
+
+STOPPING = map(chr, range(14, 15))
 
 END = ConversationHandler.END
 
@@ -55,22 +66,24 @@ async def generate_buttons(prefix: str,
 async def admin_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         [
-            InlineKeyboardButton("Add Team",
+            InlineKeyboardButton("Доб. Сторону",
                                  callback_data=str(ADD_TEAM)),
-            InlineKeyboardButton("Edit Team",
+            InlineKeyboardButton("Ред. Сторону",
                                  callback_data=str(EDIT_TEAM)),
-            InlineKeyboardButton("Del Team",
+            InlineKeyboardButton("Уд. Сторону",
                                  callback_data=str(DELETE_TEAM))
         ],
         [
-            InlineKeyboardButton("Add Point",
+            InlineKeyboardButton("Доб. Точку",
                                  callback_data=str(ADD_POINT)),
-            InlineKeyboardButton("Del Point",
+            InlineKeyboardButton("Ред. Точку",
+                                 callback_data=str(EDIT_POINT)),
+            InlineKeyboardButton("Уд. Точку",
                                  callback_data=str(DELETE_POINT))
         ],
         [
-            InlineKeyboardButton("Reset Players, Points & Timers",
-                                 callback_data=str(BACK_TO_MENU)),
+            InlineKeyboardButton("Сброс: игроки, точки и таймеры",
+                                 callback_data=str(RESET_ALL)),
         ],
     ]
 
@@ -79,11 +92,42 @@ async def admin_keyboard() -> InlineKeyboardMarkup:
     return keyboard
 
 
-async def back_to_menu() -> InlineKeyboardMarkup:
+async def back() -> InlineKeyboardMarkup:
     button = [
         [
-            InlineKeyboardButton("Back to the Menu",
+            InlineKeyboardButton("⬅️: Назад",
                                  callback_data=str(END))
+        ]
+    ]
+
+    keyboard = InlineKeyboardMarkup(button)
+
+    return keyboard
+
+
+async def query_points_data_keyboard() -> InlineKeyboardMarkup:
+    button = [
+        [
+            InlineKeyboardButton("Название",
+                                 callback_data=str(POINT_NAME)),
+            InlineKeyboardButton("Статус",
+                                 callback_data=str(POINT_STATUS)),
+        ],
+        [
+            InlineKeyboardButton("Широта",
+                                 callback_data=str(POINT_LATITUDE)),
+            InlineKeyboardButton("Долгота",
+                                 callback_data=str(POINT_LONGITUDE)),
+        ],
+        [
+            InlineKeyboardButton("Время",
+                                 callback_data=str(POINT_TIME)),
+            InlineKeyboardButton("Радиус",
+                                 callback_data=str(POINT_RADIUS)),
+        ],
+        [
+            InlineKeyboardButton("⬅️: Вернуться к точкам",
+                                 callback_data=str(END)),
         ]
     ]
 
@@ -116,7 +160,7 @@ async def teams_keyboard() -> InlineKeyboardMarkup:
 
 
 async def point_activation_keyboard() -> ReplyKeyboardMarkup:
-    button = [[KeyboardButton(text='АКТИВИРОВАТЬ ТОЧКУ',
+    button = [[KeyboardButton(text='📍: АКТИВИРОВАТЬ ТОЧКУ',
                               request_location=True)]]
 
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True,
