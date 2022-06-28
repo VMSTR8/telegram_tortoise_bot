@@ -3,6 +3,7 @@ import string
 
 
 from telegram import Update
+from telegram.error import BadRequest
 
 from telegram.ext import (
     CallbackContext,
@@ -153,16 +154,20 @@ async def stop_callsign_handler(update: Update,
                                 context: CallbackContext.DEFAULT_TYPE) -> \
         END:
     """Останавливает добавление позывного."""
+    try:
+        text = 'Обновление позывного отменено.'
 
-    text = 'Обновление позывного отменено.'
+        await context.bot.edit_message_text(
+            text=text,
+            chat_id=update.effective_chat.id,
+            message_id=context.user_data.get('callsign_message_id'),
+        )
 
-    await context.bot.edit_message_text(
-        text=text,
-        chat_id=update.effective_chat.id,
-        message_id=context.user_data.get('callsign_message_id'),
-    )
+        return END
 
-    return END
+    except BadRequest:
+
+        return END
 
 
 async def team(update: Update,
@@ -184,7 +189,7 @@ async def team(update: Update,
 
             save_data = await update.message.reply_text(
                 text=text,
-                reply_markup=await teams_keyboard()
+                reply_markup=await teams_keyboard(False)
             )
 
             context.user_data['team_message_id'] = int(save_data.message_id)
@@ -260,13 +265,18 @@ async def stop_team_handler(update: Update,
                             context: CallbackContext.DEFAULT_TYPE) -> \
         END:
     """Останавливает выбор стороны."""
+    try:
+        text = 'Выбор стороны прекращен. Если нужно выбрать сторону, ' \
+               'повторно введи /team в чат.'
+        await context.bot.edit_message_text(
+            text=text,
+            chat_id=update.effective_chat.id,
+            message_id=context.user_data.get('team_message_id')
+        )
 
-    text = 'Выбор стороны прекращен. Если нужно выбрать сторону, ' \
-           'повторно введи /team в чат.'
-    await context.bot.edit_message_text(
-        text=text,
-        chat_id=update.effective_chat.id,
-        message_id=context.user_data.get('team_message_id')
-    )
+        return END
 
-    return END
+    except BadRequest:
+
+        return END
+
