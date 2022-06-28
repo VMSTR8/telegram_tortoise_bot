@@ -56,8 +56,7 @@ from handlers.admin_command import (
     ENTER_POINT_COORDINATES,
     ENTER_DELETING_POINT,
     ENTER_EDITING_POINT_NAME,
-    ENTER_EDITING_POINT_LATITUDE,
-    ENTER_EDITING_POINT_LONGITUDE,
+    ENTER_EDITING_POINT_COORDINATE,
     ENTER_EDITING_POINT_TIME,
     ENTER_EDITING_POINT_RADIUS,
     admin,
@@ -81,8 +80,7 @@ from handlers.admin_command import (
     editing_point_time,
     editing_point_radius,
     commit_new_point_name,
-    commit_new_point_latitude,
-    commit_new_point_longitude,
+    commit_new_point_coordinate,
     commit_new_point_time,
     commit_new_point_radius,
     deleting_point,
@@ -179,16 +177,10 @@ def main() -> None:
                     commit_new_point_name
                 )
             ],
-            ENTER_EDITING_POINT_LATITUDE: [
+            ENTER_EDITING_POINT_COORDINATE: [
                 MessageHandler(
                     filters.TEXT & (~ filters.COMMAND),
-                    commit_new_point_latitude
-                )
-            ],
-            ENTER_EDITING_POINT_LONGITUDE: [
-                MessageHandler(
-                    filters.TEXT & (~ filters.COMMAND),
-                    commit_new_point_longitude
+                    commit_new_point_coordinate
                 )
             ],
             ENTER_EDITING_POINT_TIME: [
