@@ -57,7 +57,16 @@ class Location(Model):
         validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)]
     )
     in_game = fields.BooleanField(default=True, null=False)
-    time = fields.FloatField(default=1200.0, null=False)
+    time = fields.FloatField(
+        default=1200.0,
+        null=False,
+        validators=[MinValueValidator(1)]
+    )
+    radius = fields.IntField(
+        default=10,
+        null=False,
+        validators=[MinValueValidator(1)]
+    )
     team: fields.ForeignKeyRelation[Team] = fields.ForeignKeyField(
         'models.Team',
         related_name='locations', null=True, on_delete=fields.SET_NULL
