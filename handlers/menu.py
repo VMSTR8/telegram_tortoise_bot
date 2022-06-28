@@ -64,7 +64,8 @@ async def start(update: Update,
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=greetings_text,
-        parse_mode=ParseMode.HTML
+        parse_mode=ParseMode.HTML,
+        reply_markup=await point_activation_keyboard()
     )
 
 
