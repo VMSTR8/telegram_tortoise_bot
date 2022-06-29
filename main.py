@@ -113,8 +113,10 @@ def main() -> None:
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Create handlers
+    # Пользователь ввел команду "start" и запустил бота
     start_handler = CommandHandler('start', start)
 
+    # The user entered "callsign" and started registering in the bot
     reg_handler = ConversationHandler(
         allow_reentry=True,
         entry_points=[CommandHandler('callsign', callsign)],
@@ -130,6 +132,7 @@ def main() -> None:
         )],
     )
 
+    # The user has entered "team" and selects a side
     team_handler = ConversationHandler(
         entry_points=[CommandHandler('team', team)],
         states={
@@ -143,6 +146,10 @@ def main() -> None:
         )],
     )
 
+    # The third level is ConversationHandle.
+    # Here the user edits the point data.
+    # Be sure to link to the second level of the conversation
+    # so that you can return to the previous menu.
     point_data_handler = [
         CallbackQueryHandler(
             editing_point_name, pattern="^" + str(POINT_NAME) + "$"
@@ -210,6 +217,10 @@ def main() -> None:
         }
     )
 
+    # The second level is ConversationHandle.
+    # The user enters the data editing mode
+    # and gets the opportunity to return
+    # to the first level of the dialog.
     second_level_conv = ConversationHandler(
         entry_points=[
             CallbackQueryHandler(
@@ -258,6 +269,9 @@ def main() -> None:
         }
     )
 
+    # The first level is ConversationHandle.
+    # As soon as the user enters the "admin" command,
+    # this menu is initiated.
     selection_handlers = [
         second_level_conv,
         CallbackQueryHandler(
@@ -294,10 +308,14 @@ def main() -> None:
         )],
     )
 
+    # A handler that accepts the coordinates
+    # sent by the user to the chat.
     point_activation_handler = MessageHandler(
         filters.LOCATION, point_activation
     )
 
+    # For any text message outside the Conversation handle,
+    # the bot informs the user of the available commands.
     unrecognized_command_handler = MessageHandler(
         filters.TEXT & (~ filters.COMMAND), unrecognized_command
     )
