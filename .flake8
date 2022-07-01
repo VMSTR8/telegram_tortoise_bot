@@ -1,0 +1,3 @@
+[flake8]
+ignore = W605, VNE003
+exclude = .git,__pycache__,./venv/
