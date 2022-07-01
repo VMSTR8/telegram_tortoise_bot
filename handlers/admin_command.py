@@ -73,7 +73,9 @@ def moderate_users_text(text: str) -> str:
             '\t', ''
         ).split()
     )
+    print(text)
     text = re.sub(r'[^а-яА-Яa-zA-Z-\s]', '', text)
+    print(text)
 
     return text
 
@@ -479,7 +481,7 @@ async def commit_point_name(
 
     point_name = moderate_users_text(text=update.message.text)
 
-    if point_name != '' and len(point_name) <= 25:
+    if point_name.replace(' ', '') != '' and len(point_name) <= 25:
         if point_name in points:
             point_already_exist = 'Такая точка уже существует.\n' \
                                   'Введи другое название.\n\n' \
