@@ -6,7 +6,6 @@ on:
 
 jobs:
   flake:
-    name: Flake_it_harder
     runs-on: ubuntu-latest
     timeout-minutes: 2
 
@@ -27,8 +26,6 @@ jobs:
         run: flake8
   
   test:
-    name: Test_it_better
-    needs: Flake_it_harder
     runs-on: ubuntu-latest
     timeout-minutes: 2
 
@@ -47,8 +44,7 @@ jobs:
         run: python -m pytest tests/test_db.py --asyncio-mode=strict
       
   build:
-    name: Build_it_faster
-    needs: Test_it_better
+
     runs-on: ubuntu-latest
 
     steps:
