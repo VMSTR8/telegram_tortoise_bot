@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck disable=SC2125
 FILE=db.*
 DIR=migrations
 
