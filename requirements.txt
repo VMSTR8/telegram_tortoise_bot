@@ -35,3 +35,5 @@ transliterate===1.10.2
 typing_extensions==4.2.0
 tzdata==2022.1
 tzlocal==4.2
+flake8==4.0.1
+flake8-variables-names==0.0.5

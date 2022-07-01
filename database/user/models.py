@@ -8,7 +8,7 @@ from database.user.custom_validators import EmptyValueValidator
 class Team(Model):
     id = fields.IntField(pk=True)
     title = fields.CharField(
-        max_length=255,
+        max_length=25,
         unique=True,
         null=False,
         validators=[EmptyValueValidator()]
@@ -22,7 +22,7 @@ class User(Model):
     id = fields.IntField(pk=True)
     telegram_id = fields.IntField(unique=True, null=False)
     callsign = fields.CharField(
-        max_length=255,
+        max_length=25,
         unique=True,
         null=True,
         validators=[EmptyValueValidator()]
@@ -41,7 +41,7 @@ class User(Model):
 class Location(Model):
     id = fields.IntField(pk=True)
     point = fields.CharField(
-        max_length=255,
+        max_length=25,
         unique=True,
         null=False,
         validators=[EmptyValueValidator()]
@@ -57,7 +57,16 @@ class Location(Model):
         validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)]
     )
     in_game = fields.BooleanField(default=True, null=False)
-    time = fields.FloatField(default=1200.0, null=False)
+    time = fields.FloatField(
+        default=1200.0,
+        null=False,
+        validators=[MinValueValidator(1), MaxValueValidator(10080)]
+    )
+    radius = fields.IntField(
+        default=10,
+        null=False,
+        validators=[MinValueValidator(1), MaxValueValidator(1000)]
+    )
     team: fields.ForeignKeyRelation[Team] = fields.ForeignKeyField(
         'models.Team',
         related_name='locations', null=True, on_delete=fields.SET_NULL

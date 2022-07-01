@@ -3,7 +3,12 @@ from tortoise import Tortoise, run_async
 from database import config
 
 
-async def init():
+async def init() -> None:
+    """
+    Initializes the connection to the database.
+
+    :return: None
+    """
     await Tortoise.init(
         db_url=config.DATABASE_URL,
         modules={'models': ['database.user.models', 'aerich.models']}

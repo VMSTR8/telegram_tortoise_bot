@@ -22,6 +22,7 @@ from database.db_functions import (
     update_points_in_game_status,
     get_points_in_game_status,
     reset_all_points,
+    get_point_info,
 )
 
 
@@ -110,13 +111,13 @@ class TestDataBaseFunctions(test.TestCase):
 
         assert await update_players_team(
             telegram_id=3,
-            team='team2'
+            team_name='team2'
         ) is None
 
         with pytest.raises(DoesNotExist):
             await update_players_team(
                 telegram_id=999999,
-                team='team1'
+                team_name='team1'
             )
 
         result = await get_users()
@@ -125,8 +126,8 @@ class TestDataBaseFunctions(test.TestCase):
     async def test_get_users_team_id(self):
         await self.db_data()
 
-        await update_players_team(telegram_id=1, team='team1')
-        await update_players_team(telegram_id=3, team='team2')
+        await update_players_team(telegram_id=1, team_name='team1')
+        await update_players_team(telegram_id=3, team_name='team2')
 
         assert await get_users_team_id(telegram_id=1) == 1
 
@@ -228,3 +229,11 @@ class TestDataBaseFunctions(test.TestCase):
         assert results[0]['team_id'] is None
         assert results[1]['in_game'] == 1
         assert results[1]['team_id'] is None
+
+    async def test_get_point_info(self):
+        await self.db_data()
+
+        results = await get_point_info('point1')
+        assert results['point'] == 'point1'
+        assert results['latitude'] == 0.0
+        assert results['in_game'] == 1
