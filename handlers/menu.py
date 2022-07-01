@@ -41,7 +41,9 @@ CREATE_OR_UPDATE_CALLSIGN, CHOOSING_TEAM_ACTION = map(chr, range(2))
 
 async def start(update: Update,
                 context: CallbackContext.DEFAULT_TYPE) -> None:
-    """Инициализация бота и отправка приветственного сообщения пользователю."""
+    """
+    Initializing the bot and sending a welcome message to the user.
+    """
 
     user = update.message.from_user.id
 
@@ -73,7 +75,9 @@ async def start(update: Update,
 async def callsign(update: Update,
                    context: CallbackContext.DEFAULT_TYPE) -> \
         CREATE_OR_UPDATE_CALLSIGN:
-    """Начало регистрации пользователя в чат-боте."""
+    """
+    The beginning of user registration in the chatbot.
+    """
 
     user = update.message.from_user.id
 
@@ -98,9 +102,12 @@ async def callsign(update: Update,
 
 async def commit_callsign(update: Update,
                           context: CallbackContext.DEFAULT_TYPE) -> END:
-    """Подтверждение позывного, который ввел пользователь. Если позывной
-    уже занят или возникла непредвиденная ошибка, бот предложит ввести
-    позывной еще раз."""
+    """
+    Confirmation of the callsign that the user entered.
+    If the callsign already used by another player or an
+    unexpected error has occurred, the bot will prompt you
+    to enter the callsign again.
+    """
 
     user = update.message.from_user.id
 
@@ -153,7 +160,10 @@ async def commit_callsign(update: Update,
 async def stop_callsign_handler(update: Update,
                                 context: CallbackContext.DEFAULT_TYPE) -> \
         END:
-    """Останавливает добавление позывного."""
+    """
+    Stops adding a callsign.
+    """
+
     try:
         text = 'Обновление позывного отменено.'
 
@@ -173,7 +183,9 @@ async def stop_callsign_handler(update: Update,
 async def team(update: Update,
                context: CallbackContext.DEFAULT_TYPE) -> \
         CHOOSING_TEAM_ACTION:
-    """Начало выбора пользователем игровой стороны."""
+    """
+    The beginning of the user's choice of the game side.
+    """
 
     teams = await get_teams()
 
@@ -220,7 +232,9 @@ async def team(update: Update,
 async def choose_the_team(update: Update,
                           context: CallbackContext.DEFAULT_TYPE) -> \
         END:
-    """Присваивает пользователю выбранную сторону."""
+    """
+    Assigns the selected side to the user.
+    """
 
     await update.callback_query.answer()
 
@@ -232,7 +246,7 @@ async def choose_the_team(update: Update,
             user_id = update.callback_query.from_user.id
             await update_players_team(
                 telegram_id=int(user_id),
-                team=str(callback_data)
+                team_name=str(callback_data)
             )
 
             await update_users_in_game(
@@ -264,7 +278,10 @@ async def choose_the_team(update: Update,
 async def stop_team_handler(update: Update,
                             context: CallbackContext.DEFAULT_TYPE) -> \
         END:
-    """Останавливает выбор стороны."""
+    """
+    Stops the side selection.
+    """
+
     try:
         text = 'Выбор стороны прекращен. Если нужно выбрать сторону, ' \
                'повторно введи /team в чат.'
@@ -279,4 +296,3 @@ async def stop_team_handler(update: Update,
     except BadRequest:
 
         return END
-
