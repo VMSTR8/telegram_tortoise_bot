@@ -73,9 +73,7 @@ def moderate_users_text(text: str) -> str:
             '\t', ''
         ).split()
     )
-    print(text)
     text = re.sub(r'[^а-яА-Яa-zA-Z-\s]', '', text)
-    print(text)
 
     return text
 

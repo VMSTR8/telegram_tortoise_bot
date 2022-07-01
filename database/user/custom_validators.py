@@ -8,5 +8,5 @@ class EmptyValueValidator(Validator):
     database for CharField, TextField.
     """
     def __call__(self, value: str):
-        if value == '':
+        if value == '' or value == ' ':
             raise ValidationError("Value can't be empty!")
