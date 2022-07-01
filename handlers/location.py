@@ -1,5 +1,6 @@
 import asyncio
 import threading
+from asyncio import sleep
 
 from telegram import Update
 from telegram.error import Forbidden
@@ -23,10 +24,21 @@ from database.db_functions import (
 from settings.settings import BOT_TOKEN
 
 
-async def success_activation(point_id: int,
-                             point: str,
-                             team: str) -> \
-        None:
+async def success_activation(
+        point_id: int,
+        point: str,
+        team: str
+) -> None:
+    """
+    Sends a message to all chat users about
+    the successful activation of the point.
+
+    :param point_id: ID of the point that was activated
+    :param point: Name of the point that was activated
+    :param team: Name of the game side,
+    which took the point out of the game
+    :return: None
+    """
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     await update_points_in_game_status(
@@ -44,17 +56,32 @@ async def success_activation(point_id: int,
                     chat_id=user['telegram_id'],
                     text=text
                 )
+                await sleep(0.1)
             except Forbidden:
                 continue
 
 
 def sync_success_activation(*args) -> None:
+    """
+    The function runs the asynchronous
+    function synchronously.
+    """
+
     asyncio.run(success_activation(*args))
 
 
-async def point_activation(update: Update,
-                           context: CallbackContext.DEFAULT_TYPE) -> \
-        None:
+async def point_activation(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> None:
+    """
+    When sending coordinates to the chat,
+    activates the point if it hasn't yet been
+    activated by a player of the same side.
+    It also starts an activation timer in
+    a separate thread.
+    """
+
     try:
         message = None
 
@@ -82,8 +109,11 @@ async def point_activation(update: Update,
             point_tuple = (point['latitude'], point['longitude'])
             dis = distance.distance(point_tuple, user_point_tuple).m
 
-            if int(dis) <= point['radius'] and \
-                    not await get_points_in_game_status(point_id=point['id']):
+            if int(dis) <= point[
+                'radius'
+            ] and not await get_points_in_game_status(
+                point_id=point['id']
+            ):
 
                 complete_status = True
 
