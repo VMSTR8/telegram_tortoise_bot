@@ -12,23 +12,93 @@ Stack: [Python 3.8](https://www.python.org/),
 [Python Telegram Bot](https://github.com/python-telegram-bot/python-telegram-bot), 
 [Tortoise ORM](https://tortoise-orm.readthedocs.io/en/latest/)
 
-## Getting started with the project
-In progress
+## Downloading and installing the bot
+If all you need is to launch a ready-to-work bot, then go straight to the section
+[Installing and launching a bot via Docker](#installing-and-launching-a-bot-via-docker).
 
-## Database initialization and migrations
-In progress
+If you don't need to run the bot through the docker container, and you want to run it through the terminal, test
+the functionality, add your own functionality, then this instruction is for you.
 
-## Launching the bot
-In progress
+At the beginning, we clone this repository to our computer:
+```bash
+$ git clone https://github.com/VMSTR8/telegram_tortoise_bot.git
+```
+
+Next, before installing all the dependencies, do not forget to create and activate a virtual environment.
+
+Creating a virtual environment:
+```bash
+$ python3 -m venv venv
+```
+
+Activation for Linux and macOS:
+```bash
+$ source venv/bin/activate
+```
+
+Activation for Windows:
+```bash
+$ venv\Scripts\activate.bat
+```
+
+Well, for now we're ready to install dependencies:
+```bash
+$ pip install -r requirements.txt
+```
+
+Then you need to create and fill in a file named .env in the **settings** folder (yes, just call it that,
+with a dot at the beginning):
+```text
+BOT_TOKEN=<Your Telegram bot token>
+DATABASE_URL=sqlite://db.sqlite3
+CREATORS_ID=<Your Telegram account ID>
+CREATORS_USERNAME=<Your username in the telegram>
+```
+* You can create your bot and get a token from [@BotFather](https://t.me/BotFather ).
+* DATABASE_URL is a standard database reference. The project uses sqlite as a database. But suddenly you need
+to change the name or other settings. That is why the reference to the database is placed in the environment variables. 
+If there is no point in personal settings, copy the link from the example.
+* CREATORS_ID, this is the ID of your telegram account. You can find it out through the bots in the telegram. 
+For example, through [@userinfobot](https://t.me/userinfobot).
+* CREATORS_USERNAME your nickname in the telegram, for example @fakeusernameofuser.
+
+As soon as all the steps from this point are done, we move on to initializing the database and migrating
+[initializing the database and migrating](#initializing-the-database-and-migrating).
+
+### Initializing the database and migrating
+Migrations are started quite easily, with just two commands.
+
+At the beginning, we will transfer the written models to a migration tool called Aerich:
+```bash
+$ aerich init -t database.config.TORTOISE_ORM
+```
+
+All that's left to do is initiate the database:
+```bash
+$ aerich init-db
+```
+
+You can proceed to [launching the bot](#launching-the-bot).
+
+### Launching the bot
+All you need to do is enter the command in the terminal, being in the root folder with the project:
+```bash
+$ python main.py
+```
+
+That's it! You are great :)
+
+## Installing and launching a bot via Docker
 
 ## Roadmap
 - ✅: Registration of a user callsign
 - ✅: Joining the gaming side
 - ✅: Admin Menu
 - ✅: (For the admin) Adding, editing, and deleting a side
-- ✅: (For the admin) Adding, ~~editing~~, and deleting a point (editing will be done later)
+- ✅: (For the admin) Adding, editing, and deleting a point
 - ❌: (For the admin) View all users
 - ❌: (For the admin) Editing user information
+- ❌: (For admin) Pagination of the menu when the admin views the sides, points or users
 - ✅: Game Point Activation
 - ❌: Display information about the remaining time until the point is removed from the game
 - ❌: Checking the status of the point (Activated (and by whom) | Not activated)
