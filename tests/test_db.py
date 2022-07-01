@@ -111,13 +111,13 @@ class TestDataBaseFunctions(test.TestCase):
 
         assert await update_players_team(
             telegram_id=3,
-            team='team2'
+            team_name='team2'
         ) is None
 
         with pytest.raises(DoesNotExist):
             await update_players_team(
                 telegram_id=999999,
-                team='team1'
+                team_name='team1'
             )
 
         result = await get_users()
@@ -126,8 +126,8 @@ class TestDataBaseFunctions(test.TestCase):
     async def test_get_users_team_id(self):
         await self.db_data()
 
-        await update_players_team(telegram_id=1, team='team1')
-        await update_players_team(telegram_id=3, team='team2')
+        await update_players_team(telegram_id=1, team_name='team1')
+        await update_players_team(telegram_id=3, team_name='team2')
 
         assert await get_users_team_id(telegram_id=1) == 1
 
