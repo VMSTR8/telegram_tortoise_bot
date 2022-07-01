@@ -261,7 +261,7 @@ def main() -> None:
             ),
             CallbackQueryHandler(
                 end_second_level_conv, pattern="^" + str(END) + "$"
-            )
+            ),
         ],
         map_to_parent={
             END: SELECTING_ACTION,
@@ -303,9 +303,11 @@ def main() -> None:
                 commit_point_coordinates
             )],
         },
-        fallbacks=[MessageHandler(
-            filters.COMMAND, stop_admin_handler
-        )],
+        fallbacks=[
+            MessageHandler(
+                filters.COMMAND, stop_admin_handler
+            )
+        ],
     )
 
     # A handler that accepts the coordinates
