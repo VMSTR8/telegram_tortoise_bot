@@ -37,8 +37,8 @@ $ source venv/bin/activate
 ```
 
 Activation for Windows:
-```bash
-$ venv\Scripts\activate.bat
+```cmd
+venv\Scripts\activate.bat
 ```
 
 Well, for now we're ready to install dependencies:
@@ -98,7 +98,8 @@ for your computer.
 Note that if you install Docker for Windows, the application will ask you to install the WSL package. Docker won't
 work without it.
 
-After installing the application, you will only need to run one command.
+After installing the application, you will need to run the command in the terminal on macOS/Linux 
+or in CMD.exe with administrator rights on Windows.
 
 ### If you deployed Docker on macOS/Linux
 
