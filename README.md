@@ -54,6 +54,8 @@ DATABASE_URL=sqlite://db.sqlite3
 CREATORS_ID=<Your Telegram account ID>
 CREATORS_USERNAME=<Your username in the telegram>
 ```
+
+### Explanation of environment variables
 * You can create your bot and get a token from [@BotFather](https://t.me/BotFather ).
 * DATABASE_URL is a standard database reference. The project uses sqlite as a database. But suddenly you need
 to change the name or other settings. That is why the reference to the database is placed in the environment variables. 
@@ -89,6 +91,38 @@ $ python main.py
 That's it! You are great :)
 
 ## Installing and launching a bot via Docker
+This section is for those people who just want to download and run a bot.
+Let's take it in order. The first thing you need to do is download and install the [Docker application](https://www.docker.com/get-started/)
+for your computer.
+
+Note that if you install Docker for Windows, the application will ask you to install the WSL package. Docker won't
+work without it.
+
+After installing the application, you will only need to run one command.
+
+### If you deployed Docker on macOS/Linux
+
+```bash
+$ docker run --name Telegram_bot -d \
+-e 'BOT_TOKEN=Your Telegram bot token' \
+-e 'DATABASE_URL=sqlite://db.sqlite3' \
+-e 'CREATORS_ID=Your Telegram account ID' \
+-e 'CREATORS_USERNAME=Your username in the telegram' vmstr8/rdwn-telegram-bot:1.2
+```
+
+### If you deployed Docker on Windows
+```cmd
+docker run --name Telegram_bot -d ^
+-e BOT_TOKEN="Your Telegram bot token" ^
+-e DATABASE_URL="sqlite://db.sqlite3" ^
+-e CREATORS_ID="Your Telegram account ID" ^
+-e CREATORS_USERNAME="Your username in the telegram" vmstr8/rdwn-telegram-bot:1.2
+```
+
+That's all. Your bot is running. You are great :)
+
+P.S. What each variable means (BOT_TOKEN, DATABASE_URL, etc.) has already been described above.
+Just go to [explanation of environment variables](#explanation-of-environment-variables).
 
 ## Roadmap
 - ✅: Registration of a user callsign
