@@ -24,6 +24,11 @@ At the beginning, we clone this repository to our computer:
 $ git clone https://github.com/VMSTR8/telegram_tortoise_bot.git
 ```
 
+Go to the folder with the project, enter the cd command and the path to the folder, for example:
+```console
+cd some_folder/telegram_tortoise_bot
+```
+
 Next, before installing all the dependencies, do not forget to create and activate a virtual environment.
 
 Creating a virtual environment:
