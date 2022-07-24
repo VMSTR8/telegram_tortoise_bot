@@ -1,4 +1,5 @@
 import logging
+from typing import NoReturn
 
 from telegram.ext import (
     CommandHandler,
@@ -91,7 +92,7 @@ from handlers.admin_command import (
     end_second_level_conv,
 )
 
-from handlers.location import point_activation
+from handlers.location import point_activation, coordinates
 
 from handlers.unrecognized import unrecognized_command
 
@@ -103,7 +104,7 @@ logging.basicConfig(
 )
 
 
-def main() -> None:
+def main() -> NoReturn:
     """Start the bot."""
 
     # Init database connect
@@ -310,10 +311,16 @@ def main() -> None:
         ],
     )
 
+    coordinates_handler = MessageHandler(
+        filters.LOCATION, coordinates
+    )
+
     # A handler that accepts the coordinates
     # sent by the user to the chat.
     point_activation_handler = MessageHandler(
-        filters.LOCATION, point_activation
+        filters.Regex('📍: АКТИВИРОВАТЬ ТОЧКУ') ^
+        filters.Regex('❌: ДЕАКТИВИРОВАТЬ ТОЧКУ') ^
+        filters.Regex('ℹ️: СТАТУС ТОЧКИ'), point_activation
     )
 
     # For any text message outside the Conversation handle,
@@ -323,8 +330,9 @@ def main() -> None:
     )
 
     application.add_handler(start_handler, 0)
-    application.add_handler(unrecognized_command_handler, 5)
-    application.add_handler(point_activation_handler, 4)
+    application.add_handler(unrecognized_command_handler, 6)
+    application.add_handler(point_activation_handler, 5)
+    application.add_handler(coordinates_handler, 4)
     application.add_handler(reg_handler, 3)
     application.add_handler(team_handler, 2)
     application.add_handler(admin_handler, 1)
