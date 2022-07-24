@@ -1,3 +1,5 @@
+from typing import NoReturn
+
 from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.constants import ParseMode
@@ -6,7 +8,7 @@ from telegram.constants import ParseMode
 async def unrecognized_command(
         update: Update,
         context: CallbackContext.DEFAULT_TYPE
-) -> None:
+) -> NoReturn:
     """
     Sends a message with commands available to users.
     """
