@@ -34,7 +34,7 @@ STOPPING = map(chr, range(14, 15))
 END = ConversationHandler.END
 
 
-async def generate_buttons(
+def generate_buttons(
         prefix: str,
         massive: list,
         trigger: bool
@@ -85,7 +85,7 @@ async def generate_buttons(
     return buttons
 
 
-async def admin_keyboard() -> InlineKeyboardMarkup:
+def admin_keyboard() -> InlineKeyboardMarkup:
     """
     Returns the generated keyboard for the admin menu.
 
@@ -119,7 +119,7 @@ async def admin_keyboard() -> InlineKeyboardMarkup:
     return keyboard
 
 
-async def back() -> InlineKeyboardMarkup:
+def back() -> InlineKeyboardMarkup:
     """
     Returns the generated keyboard with back button.
 
@@ -137,7 +137,7 @@ async def back() -> InlineKeyboardMarkup:
     return keyboard
 
 
-async def query_points_data_keyboard() -> InlineKeyboardMarkup:
+def query_points_data_keyboard() -> InlineKeyboardMarkup:
     """
     Generates and returns a keyboard for editing points.
 
@@ -185,7 +185,7 @@ async def query_teams_keyboard(
     teams = await get_teams()
 
     keyboard = InlineKeyboardMarkup(
-        await generate_buttons('TEAM_COLOR', teams, trigger=True)
+        generate_buttons('TEAM_COLOR', teams, trigger=True)
     )
 
     return keyboard
@@ -199,19 +199,28 @@ async def teams_keyboard(trigger: bool) -> InlineKeyboardMarkup:
     teams = await get_teams()
 
     keyboard = InlineKeyboardMarkup(
-        await generate_buttons('TEAM_COLOR', teams, trigger)
+        generate_buttons('TEAM_COLOR', teams, trigger)
     )
 
     return keyboard
 
 
-async def point_activation_keyboard() -> ReplyKeyboardMarkup:
+def point_activation_keyboard() -> ReplyKeyboardMarkup:
     """
     Adds the "ACTIVATE POINT" button at the bottom of the chatbot.
     """
 
-    button = [[KeyboardButton(text='📍: АКТИВИРОВАТЬ ТОЧКУ',
-                              request_location=True)]]
+    button = [
+        [
+            KeyboardButton(text='📍: АКТИВИРОВАТЬ ТОЧКУ')
+        ],
+        [
+            KeyboardButton(text='❌: ДЕАКТИВИРОВАТЬ ТОЧКУ')
+        ],
+        [
+            KeyboardButton(text='ℹ️: СТАТУС ТОЧКИ')
+        ],
+    ]
 
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True,
                                    keyboard=button)
@@ -231,7 +240,7 @@ async def query_points_keyboard(
     points = [point.get('point') for point in await get_points()]
 
     keyboard = InlineKeyboardMarkup(
-        await generate_buttons('POINT', points, trigger=True)
+        generate_buttons('POINT', points, trigger=True)
     )
 
     return keyboard
