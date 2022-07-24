@@ -1,6 +1,6 @@
 import re
 import string
-
+from typing import NoReturn
 
 from telegram import Update
 from telegram.error import BadRequest
@@ -40,7 +40,7 @@ CREATE_OR_UPDATE_CALLSIGN, CHOOSING_TEAM_ACTION = map(chr, range(2))
 
 
 async def start(update: Update,
-                context: CallbackContext.DEFAULT_TYPE) -> None:
+                context: CallbackContext.DEFAULT_TYPE) -> NoReturn:
     """
     Initializing the bot and sending a welcome message to the user.
     """
@@ -68,7 +68,7 @@ async def start(update: Update,
         chat_id=update.effective_chat.id,
         text=greetings_text,
         parse_mode=ParseMode.HTML,
-        reply_markup=await point_activation_keyboard()
+        reply_markup=point_activation_keyboard()
     )
 
 
@@ -129,7 +129,7 @@ async def commit_callsign(update: Update,
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
-            reply_markup=await point_activation_keyboard()
+            reply_markup=point_activation_keyboard()
         )
 
         raise ApplicationHandlerStop(END)
@@ -255,7 +255,9 @@ async def choose_the_team(update: Update,
             )
 
             text = f'Выбрана сторона: {callback_data.capitalize()}'
-            await update.callback_query.edit_message_text(text=text)
+            await update.callback_query.edit_message_text(
+                text=text
+            )
 
             return END
 
