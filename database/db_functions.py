@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union, NoReturn
 
 from tortoise.exceptions import DoesNotExist
 
@@ -33,7 +33,7 @@ async def get_users() -> List[dict]:
 async def update_users_in_game(
         telegram_id: int,
         status: bool
-) -> None:
+) -> NoReturn:
     """
     Updates the player's "in_game" status.
 
@@ -45,7 +45,7 @@ async def update_users_in_game(
     await User.filter(telegram_id=telegram_id).update(in_game=status)
 
 
-async def reset_all_users() -> None:
+async def reset_all_users() -> NoReturn:
     """
     Resets the "in_game" and "team_id"
     fields to all users by assigning a null value.
@@ -74,7 +74,7 @@ async def get_teams() -> List[str]:
 async def update_players_team(
         telegram_id: int,
         team_name: str
-) -> None:
+) -> NoReturn:
     """
     Assigns a command to the user. If the telegram ID
     does not exist, it throws an exception.
@@ -118,7 +118,7 @@ async def get_team_title_by_team_id(team_id: int) -> str:
     return team_title['title']
 
 
-async def delete_team(team_title: str) -> None:
+async def delete_team(team_title: str) -> NoReturn:
     """
     Deletes the team from the database.
 
@@ -140,13 +140,13 @@ async def get_points() -> List[dict]:
 
 async def update_points_team_id(
         point_id: int,
-        team_id: int
-) -> None:
+        team_id: Union[int, None]
+) -> NoReturn:
     """
     Updates the Team ID for the point.
 
     :param point_id: ID of existing point
-    :param team_id: Team ID
+    :param team_id: Optional. Team ID or None
     :return: None
     """
     await Location.filter(
@@ -168,7 +168,7 @@ async def get_point_time(point_id: int) -> int:
 async def update_points_in_game_status(
         point_id: int,
         status: bool
-) -> None:
+) -> NoReturn:
     """
     Updates the "in_game" status for the specified point.
 
@@ -191,7 +191,7 @@ async def get_points_in_game_status(point_id: int) -> bool:
     return in_game['in_game']
 
 
-async def reset_all_points() -> None:
+async def reset_all_points() -> NoReturn:
     """
     Resets the "in_game", "time", "team_id" fields
     of the Locations table, assigning a null value.
@@ -207,7 +207,7 @@ async def reset_all_points() -> None:
         )
 
 
-async def delete_point(point_title: str) -> None:
+async def delete_point(point_title: str) -> NoReturn:
     """
     Deletes the game point from the database.
 
