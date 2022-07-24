@@ -1,5 +1,6 @@
 import re
 import threading
+from typing import NoReturn
 
 from telegram import Update
 from telegram.error import BadRequest
@@ -90,7 +91,7 @@ async def point_message(point_name: str) -> str:
     if data['in_game']:
         point_status = 'В игре'
     else:
-        point_status = 'Выведина из игры'
+        point_status = 'Выведена из игры'
 
     point_data_message = f'Выбери, какие данные точки нужно ' \
                          f'отредактировать:\n\n' \
@@ -128,7 +129,7 @@ async def admin(
                              'введи команду /stop'
                 save_data = await update.message.reply_text(
                     text=admin_text,
-                    reply_markup=await admin_keyboard()
+                    reply_markup=admin_keyboard()
                 )
 
                 context.user_data['admin_message_id'] = int(
@@ -160,7 +161,7 @@ async def admin(
 
         save_data = await update.callback_query.edit_message_text(
             text=admin_text,
-            reply_markup=await admin_keyboard()
+            reply_markup=admin_keyboard()
         )
 
         context.user_data['admin_message_id'] = int(save_data.message_id)
@@ -224,7 +225,7 @@ async def commit_team(
             save_data = await context.bot.send_message(
                 text=team_created,
                 chat_id=update.effective_chat.id,
-                reply_markup=await admin_keyboard()
+                reply_markup=admin_keyboard()
             )
 
             context.user_data['admin_message_id'] = int(save_data.message_id)
@@ -274,7 +275,7 @@ async def editing_team(
 
         await update.callback_query.edit_message_text(
             text=no_teams,
-            reply_markup=await back()
+            reply_markup=back()
         )
 
         return BACK
@@ -345,7 +346,7 @@ async def commit_update_team(
             save_data = await context.bot.send_message(
                 text=update_success,
                 chat_id=update.effective_chat.id,
-                reply_markup=await admin_keyboard()
+                reply_markup=admin_keyboard()
             )
 
             context.user_data['admin_message_id'] = int(save_data.message_id)
@@ -394,7 +395,7 @@ async def deleting_team(
         no_teams = 'Нет добавленных сторон. Нечего удалять.'
         await update.callback_query.edit_message_text(
             text=no_teams,
-            reply_markup=await back()
+            reply_markup=back()
         )
 
         return BACK
@@ -437,7 +438,7 @@ async def commit_deleting_team(
 
     save_data = await update.callback_query.edit_message_text(
         text=delete_success,
-        reply_markup=await admin_keyboard()
+        reply_markup=admin_keyboard()
     )
 
     context.user_data['admin_message_id'] = int(save_data.message_id)
@@ -500,11 +501,9 @@ async def commit_point_name(
                                  f'Введи координаты в чат через ' \
                                  f'запятую, например:\n' \
                                  f'12.345678, 87.654321\n\n' \
-                                 f'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", ' \
-                                 f'эта кнопка ' \
-                                 f'в данный момент времени перешлет ' \
-                                 f'боту координаты ' \
-                                 f'и запишет их в базу.\n\n' \
+                                 f'Или поделись координатами с ' \
+                                 f'ботом через Вложения' \
+                                 f'-Геопозиция-Отправить геопозицию.\n\n' \
                                  f'P.S. Помни, если вводишь данные ' \
                                  f'вручную, то ' \
                                  f'широта и долгота должны быть меньше ' \
@@ -543,89 +542,112 @@ async def commit_point_coordinates(
     input of coordinates and a message with
     coordinates that can be sent via Telegram.
     """
+    try:
+        if update.message.location:
 
-    if update.message.location:
+            await Location.get_or_create(
+                point=context.user_data.get('point_name'),
+                latitude=update.message.location.latitude,
+                longitude=update.message.location.longitude
+            )
+            point_name = context.user_data.get("point_name").capitalize()
+            point_confirm = f'Точка создана.\n\n' \
+                            f'Название: ' \
+                            f'{point_name}\n' \
+                            f'Широта: {update.message.location.latitude}\n' \
+                            f'Долгота: ' \
+                            f'{update.message.location.longitude}\n\n' \
+                            f'Нажми на /stop, чтобы остановить выполнение ' \
+                            f'админских команд.'
 
-        await Location.get_or_create(
-            point=context.user_data.get('point_name'),
-            latitude=update.message.location.latitude,
-            longitude=update.message.location.longitude
-        )
-        point_name = context.user_data.get("point_name").capitalize()
-        point_confirm = f'Точка создана.\n\n' \
-                        f'Название: ' \
-                        f'{point_name}\n' \
-                        f'Широта: {update.message.location.latitude}\n' \
-                        f'Долгота: {update.message.location.longitude}\n\n' \
-                        f'Нажми на /stop, чтобы остановить выполнение ' \
-                        f'админских команд.'
+            save_data = await context.bot.send_message(
+                text=point_confirm,
+                chat_id=update.effective_chat.id,
+                reply_markup=admin_keyboard()
+            )
 
-        save_data = await context.bot.send_message(
-            text=point_confirm,
-            chat_id=update.effective_chat.id,
-            reply_markup=await admin_keyboard()
-        )
+            context.user_data['admin_message_id'] = int(save_data.message_id)
 
-        context.user_data['admin_message_id'] = int(save_data.message_id)
+            raise ApplicationHandlerStop(SELECTING_ACTION)
 
-        raise ApplicationHandlerStop(SELECTING_ACTION)
+        else:
 
-    else:
-
-        try:
-            text = update.message.text
-            coordinates = [
-                float(coordinate) for coordinate in text.replace(
-                    ' ', ''
-                ).split(',')
-            ]
             try:
-                await Location.get_or_create(
-                    point=context.user_data.get('point_name'),
-                    latitude=coordinates[0],
-                    longitude=coordinates[1]
-                )
+                text = update.message.text
+                coordinates = [
+                    float(coordinate) for coordinate in text.replace(
+                        ' ', ''
+                    ).split(',')
+                ]
+                try:
+                    await Location.get_or_create(
+                        point=context.user_data.get('point_name'),
+                        latitude=coordinates[0],
+                        longitude=coordinates[1]
+                    )
 
-                point_name = context.user_data.get(
-                    "point_name"
-                ).capitalize()
+                    point_name = context.user_data.get(
+                        "point_name"
+                    ).capitalize()
 
-                point_confirm = f'Точка создана.\n\n' \
-                                f'Название: ' \
-                                f'{point_name}\n' \
-                                f'Широта: {coordinates[0]}\n' \
-                                f'Долгота: {coordinates[1]}'
+                    point_confirm = f'Точка создана.\n\n' \
+                                    f'Название: ' \
+                                    f'{point_name}\n' \
+                                    f'Широта: {coordinates[0]}\n' \
+                                    f'Долгота: {coordinates[1]}'
 
-                save_data = await context.bot.send_message(
-                    text=point_confirm,
-                    chat_id=update.effective_chat.id,
-                    reply_markup=await admin_keyboard()
-                )
+                    save_data = await context.bot.send_message(
+                        text=point_confirm,
+                        chat_id=update.effective_chat.id,
+                        reply_markup=admin_keyboard()
+                    )
 
-                context.user_data['admin_message_id'] = int(
-                    save_data.message_id
-                )
+                    context.user_data['admin_message_id'] = int(
+                        save_data.message_id
+                    )
 
-                raise ApplicationHandlerStop(SELECTING_ACTION)
+                    raise ApplicationHandlerStop(SELECTING_ACTION)
 
-            except ValidationError:
+                except ValidationError:
 
-                error_message = 'Переданные данные не являются ' \
-                                'координатами.\n\n' \
-                                'Введи координаты в чат ' \
-                                'через запятую, например:\n' \
+                    error_message = 'Переданные данные не являются ' \
+                                    'координатами.\n\n' \
+                                    'Введи координаты в чат через ' \
+                                    'запятую, например:\n' \
+                                    '12.345678, 87.654321\n\n' \
+                                    'Или поделись координатами с ' \
+                                    'ботом через Вложения' \
+                                    '-Геопозиция-Отправить геопозицию.\n\n' \
+                                    'P.S. Помни, если вводишь данные ' \
+                                    'вручную, то ' \
+                                    'широта и долгота должны быть меньше ' \
+                                    '-90.000000 и больше 90.000000.\n\n' \
+                                    'Команда /stop остановит ' \
+                                    'добавление точки и админ-меню.'
+
+                    await update.message.reply_text(
+                        text=error_message,
+                    )
+
+                    raise ApplicationHandlerStop(ENTER_POINT_COORDINATES)
+
+            except ValueError:
+
+                error_message = 'Это похоже на координаты? ' \
+                                'Прочитай внимательно ' \
+                                'инструкцию ниже и попробуй еще раз.\n\n' \
+                                'Введи координаты в чат через ' \
+                                'запятую, например:\n' \
                                 '12.345678, 87.654321\n\n' \
-                                'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", ' \
-                                'эта кнопка ' \
-                                'в данный момент времени ' \
-                                'перешлет боту координаты ' \
-                                'и запишет их в базу.\n\n' \
+                                'Или поделись координатами с ' \
+                                'ботом через Вложения' \
+                                '-Геопозиция-Отправить геопозицию.\n\n' \
                                 'P.S. Помни, если вводишь данные ' \
                                 'вручную, то ' \
                                 'широта и долгота должны быть меньше ' \
                                 '-90.000000 и больше 90.000000.\n\n' \
-                                'Команда /stop остановит добавление ' \
-                                'точки и админ-меню.'
+                                'Команда /stop остановит ' \
+                                'добавление точки и админ-меню.'
 
                 await update.message.reply_text(
                     text=error_message,
@@ -633,50 +655,46 @@ async def commit_point_coordinates(
 
                 raise ApplicationHandlerStop(ENTER_POINT_COORDINATES)
 
-        except ValueError:
+            except IndexError:
 
-            error_message = 'Это похоже на координаты? Прочитай внимательно ' \
-                            'инструкцию ниже и попробуй еще раз.\n\n' \
-                            'Введи координаты в чат через запятую, ' \
-                            'например:\n' \
-                            '12.345678, 87.654321\n\n' \
-                            'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", эта кнопка ' \
-                            'в данный момент времени перешлет ' \
-                            'боту координаты ' \
-                            'и запишет их в базу.\n\n' \
-                            'P.S. Помни, если вводишь данные вручную, то ' \
-                            'широта и долгота должны быть меньше ' \
-                            '-90.000000 и больше 90.000000.\n\n' \
-                            'Команда /stop остановит добавление точки ' \
-                            'и админ-меню.'
+                error_message = 'Ты вводишь одну координату, ' \
+                                'а нужно две!\n\n' \
+                                'Введи координаты в чат через ' \
+                                'запятую, например:\n' \
+                                '12.345678, 87.654321\n\n' \
+                                'Или поделись координатами с ' \
+                                'ботом через Вложения' \
+                                '-Геопозиция-Отправить геопозицию.\n\n' \
+                                'P.S. Помни, если вводишь данные ' \
+                                'вручную, то ' \
+                                'широта и долгота должны быть меньше ' \
+                                '-90.000000 и больше 90.000000.\n\n' \
+                                'Команда /stop остановит ' \
+                                'добавление точки и админ-меню.'
 
-            await update.message.reply_text(
-                text=error_message,
-            )
+                await update.message.reply_text(
+                    text=error_message,
+                )
 
-            raise ApplicationHandlerStop(ENTER_POINT_COORDINATES)
+                raise ApplicationHandlerStop(ENTER_POINT_COORDINATES)
 
-        except IndexError:
+    except AttributeError:
+        error_message = 'Добавление точки остановлено, так как включен ' \
+                        'режим Live Location. Он вызывает ошибку при ' \
+                        'добавлении, поэтому для начала отключи ' \
+                        'непрерывную передачу геопозиции, а затем ' \
+                        'попробуй добавить точку еще раз.\n\n' \
+                        'Команда /stop остановит админ-меню.'
 
-            error_message = 'Ты вводишь одну координату, а нужно две!\n\n' \
-                            'Введи координаты в чат через запятую, ' \
-                            'например:\n' \
-                            '12.345678, 87.654321\n\n' \
-                            'Или нажми "АКТИВИРОВАТЬ ТОЧКУ", эта кнопка ' \
-                            'в данный момент времени перешлет ' \
-                            'боту координаты ' \
-                            'и запишет их в базу.\n\n' \
-                            'P.S. Помни, если вводишь данные вручную, то ' \
-                            'широта и долгота должны быть меньше ' \
-                            '-90.000000 и больше 90.000000.\n\n' \
-                            'Команда /stop остановит добавление точки ' \
-                            'и админ-меню.'
+        save_data = await context.bot.send_message(
+            text=error_message,
+            chat_id=update.effective_chat.id,
+            reply_markup=admin_keyboard()
+        )
 
-            await update.message.reply_text(
-                text=error_message,
-            )
+        context.user_data['admin_message_id'] = int(save_data.message_id)
 
-            raise ApplicationHandlerStop(ENTER_POINT_COORDINATES)
+        raise ApplicationHandlerStop(SELECTING_ACTION)
 
 
 async def editing_point(
@@ -709,7 +727,7 @@ async def editing_point(
         no_points = 'Нет добавленных точек. Нечего редактировать.'
         await update.callback_query.edit_message_text(
             text=no_points,
-            reply_markup=await back()
+            reply_markup=back()
         )
 
         return BACK
@@ -735,7 +753,7 @@ async def entering_editing_point(
 
     await update.callback_query.edit_message_text(
         text=point_data,
-        reply_markup=await query_points_data_keyboard()
+        reply_markup=query_points_data_keyboard()
     )
 
     return SELECTING_DATA_TO_CHANGE
@@ -806,7 +824,7 @@ async def commit_new_point_name(
             save_data = await context.bot.send_message(
                 text=update_success,
                 chat_id=update.effective_chat.id,
-                reply_markup=await query_points_data_keyboard()
+                reply_markup=query_points_data_keyboard()
             )
 
             context.user_data['callback_data'] = str(new_point_name)
@@ -856,7 +874,7 @@ async def editing_in_game_point(
 
     await update.callback_query.edit_message_text(
         text=point_data_message,
-        reply_markup=await query_points_data_keyboard()
+        reply_markup=query_points_data_keyboard()
     )
 
     return SELECTING_DATA_TO_CHANGE
@@ -951,7 +969,7 @@ async def commit_new_point_coordinate(
                 save_data = await context.bot.send_message(
                     text=new_longitude_confirm,
                     chat_id=update.effective_chat.id,
-                    reply_markup=await query_points_data_keyboard()
+                    reply_markup=query_points_data_keyboard()
                 )
 
             else:
@@ -967,7 +985,7 @@ async def commit_new_point_coordinate(
                 save_data = await context.bot.send_message(
                     text=new_longitude_confirm,
                     chat_id=update.effective_chat.id,
-                    reply_markup=await query_points_data_keyboard()
+                    reply_markup=query_points_data_keyboard()
                 )
 
             context.user_data['admin_message_id'] = int(
@@ -1062,7 +1080,7 @@ async def commit_new_point_time(
         save_data = await context.bot.send_message(
             text=new_time_confirm,
             chat_id=update.effective_chat.id,
-            reply_markup=await query_points_data_keyboard()
+            reply_markup=query_points_data_keyboard()
         )
 
         context.user_data['admin_message_id'] = int(save_data.message_id)
@@ -1150,7 +1168,7 @@ async def commit_new_point_radius(
         save_data = await context.bot.send_message(
             text=new_time_confirm,
             chat_id=update.effective_chat.id,
-            reply_markup=await query_points_data_keyboard()
+            reply_markup=query_points_data_keyboard()
         )
 
         context.user_data['admin_message_id'] = int(save_data.message_id)
@@ -1214,7 +1232,7 @@ async def deleting_point(
         no_points = 'Нет добавленных точек. Нечего удалять.'
         await update.callback_query.edit_message_text(
             text=no_points,
-            reply_markup=await back()
+            reply_markup=back()
         )
 
         return BACK
@@ -1248,7 +1266,7 @@ async def commit_deleting_point(
 
     save_data = await update.callback_query.edit_message_text(
         text=delete_success,
-        reply_markup=await admin_keyboard()
+        reply_markup=admin_keyboard()
     )
 
     context.user_data['admin_message_id'] = int(save_data.message_id)
@@ -1259,7 +1277,7 @@ async def commit_deleting_point(
 async def close_and_stop(
         update: Update,
         context: CallbackContext.DEFAULT_TYPE
-) -> None:
+) -> NoReturn:
     """
     Stops the execution of admin commands,
     deletes the admin keyboard and informs the user about it.
@@ -1377,7 +1395,7 @@ async def restart_points(
 
     await update.callback_query.edit_message_text(
         text=text,
-        reply_markup=await back()
+        reply_markup=back()
     )
 
     return BACK
