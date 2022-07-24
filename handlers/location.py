@@ -1,10 +1,16 @@
 import asyncio
 import threading
 from asyncio import sleep
+from typing import NoReturn
 
 from telegram import Update
 from telegram.error import Forbidden
-from telegram.ext import CallbackContext, ApplicationBuilder
+
+from telegram.ext import (
+    CallbackContext,
+    ApplicationBuilder,
+    ApplicationHandlerStop,
+)
 
 from geopy import distance
 
@@ -18,7 +24,7 @@ from database.db_functions import (
     update_points_in_game_status,
     get_team_title_by_team_id,
     get_users,
-    get_points_in_game_status
+    get_points_in_game_status,
 )
 
 from settings.settings import BOT_TOKEN
@@ -28,7 +34,7 @@ async def success_activation(
         point_id: int,
         point: str,
         team: str
-) -> None:
+) -> NoReturn:
     """
     Sends a message to all chat users about
     the successful activation of the point.
@@ -61,7 +67,7 @@ async def success_activation(
                 continue
 
 
-def sync_success_activation(*args) -> None:
+def sync_success_activation(*args) -> NoReturn:
     """
     The function runs the asynchronous
     function synchronously.
@@ -70,10 +76,37 @@ def sync_success_activation(*args) -> None:
     asyncio.run(success_activation(*args))
 
 
+async def coordinates(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> NoReturn:
+    """
+    Заполнить
+    """
+
+    context.user_data['latitude'] = None
+    context.user_data['longitude'] = None
+
+    if update.edited_message:
+        context.user_data[
+            'latitude'
+        ] = update.edited_message.location.latitude
+        context.user_data[
+            'longitude'
+        ] = update.edited_message.location.longitude
+    else:
+        context.user_data[
+            'latitude'
+        ] = update.message.location.latitude
+        context.user_data[
+            'longitude'
+        ] = update.message.location.longitude
+
+
 async def point_activation(
         update: Update,
         context: CallbackContext.DEFAULT_TYPE
-) -> None:
+) -> NoReturn:
     """
     When sending coordinates to the chat,
     activates the point if it hasn't yet been
@@ -83,18 +116,14 @@ async def point_activation(
     """
 
     try:
-        message = None
-
-        if update.edited_message:
-            message = update.edited_message
-        else:
-            message = update.message
+        message = update.message
+        pushed_button = message.text
 
         points = await get_points()
         user_point = [
             {
-                'lat': message.location.latitude,
-                'lng': message.location.longitude
+                'lat': context.user_data.get('latitude'),
+                'lng': context.user_data.get('longitude')
             }
         ]
 
@@ -109,70 +138,187 @@ async def point_activation(
             point_tuple = (point['latitude'], point['longitude'])
             dis = distance.distance(point_tuple, user_point_tuple).m
 
-            if int(dis) <= point[
-                'radius'
-            ] and not await get_points_in_game_status(
-                point_id=point['id']
-            ):
+            if pushed_button == '📍: АКТИВИРОВАТЬ ТОЧКУ':
 
-                complete_status = True
+                if int(dis) <= point[
+                    'radius'
+                ] and not await get_points_in_game_status(
+                    point_id=point['id']
+                ):
 
-                out_of_game_text = f'Точка {point["point"].upper()} ' \
-                                   f'уже подорвана и выведена из игры!'
+                    complete_status = True
 
-                await message.reply_text(
-                    text=out_of_game_text
-                )
+                    out_of_game_text = f'Точка {point["point"].upper()} ' \
+                                       f'уже подорвана и выведена из игры!'
 
-            elif int(dis) <= point['radius'] and point['team_id'] != team_id:
+                    await message.reply_text(
+                        text=out_of_game_text
+                    )
 
-                timer = threading.Timer(
-                    interval=await get_point_time(point_id=point['id']),
-                    function=sync_success_activation,
-                    args=[
-                        point['id'],
-                        point['point'].capitalize(),
-                        team_name
-                    ]
-                )
+                    raise ApplicationHandlerStop
 
-                timer.name = point['point']
+                elif int(dis) <= point[
+                    'radius'
+                ] and point[
+                    'team_id'
+                ] != team_id:
 
-                for thread in threading.enumerate():
-                    if thread.name == point['point']:
-                        thread.cancel()
+                    timer = threading.Timer(
+                        interval=await get_point_time(point_id=point['id']),
+                        function=sync_success_activation,
+                        args=[
+                            point['id'],
+                            point['point'].capitalize(),
+                            team_name
+                        ]
+                    )
 
-                timer.start()
+                    timer.name = point['point']
 
-                complete_status = True
+                    for thread in threading.enumerate():
+                        if thread.name == point['point']:
+                            thread.cancel()
 
-                activation_text = f"{message.from_user.name}, " \
-                                  f"{point['point'].upper()} активирована!"
+                    timer.start()
 
-                await update_points_team_id(point_id=point['id'],
-                                            team_id=team_id)
+                    complete_status = True
 
-                await message.reply_text(text=activation_text)
+                    activation_text = f"{message.from_user.name}, " \
+                                      f"{point['point'].upper()} активирована!"
 
-            elif int(dis) <= point['radius'] and point['team_id'] == team_id:
-                complete_status = True
+                    await update_points_team_id(point_id=point['id'],
+                                                team_id=team_id)
 
-                already_active_text = 'Точка уже активирована ' \
-                                      'твоей игровой стороной!'
+                    await message.reply_text(text=activation_text)
 
-                await message.reply_text(
-                    text=already_active_text
-                )
+                    raise ApplicationHandlerStop
 
-            elif complete_status:
-                break
+                elif int(dis) <= point[
+                    'radius'
+                ] and point[
+                    'team_id'
+                ] == team_id:
 
-            else:
-                continue
+                    complete_status = True
+
+                    already_active_text = 'Точка уже активирована ' \
+                                          'твоей игровой стороной!'
+
+                    await message.reply_text(
+                        text=already_active_text
+                    )
+
+                    raise ApplicationHandlerStop
+
+                elif complete_status:
+                    break
+
+                else:
+                    continue
+
+            elif pushed_button == '❌: ДЕАКТИВИРОВАТЬ ТОЧКУ':
+
+                if int(dis) <= point[
+                    'radius'
+                ] and not await get_points_in_game_status(
+                    point_id=point['id']
+                ):
+                    complete_status = True
+
+                    out_of_game_text = f'Точка {point["point"].upper()} ' \
+                                       f'уже подорвана и выведена из игры!'
+
+                    await message.reply_text(
+                        text=out_of_game_text
+                    )
+
+                    raise ApplicationHandlerStop
+
+                elif int(dis) <= point[
+                    'radius'
+                ] and point['team_id'] is None:
+
+                    complete_status = True
+
+                    already_active_text = 'Точка еще не активирована!'
+
+                    await message.reply_text(
+                        text=already_active_text
+                    )
+
+                    raise ApplicationHandlerStop
+
+                elif int(dis) <= point[
+                    'radius'
+                ]:
+
+                    for thread in threading.enumerate():
+                        if thread.name == point['point']:
+                            thread.cancel()
+
+                    await update_points_team_id(
+                        point_id=point['id'],
+                        team_id=None
+                    )
+
+                    deactivation_text = f"{message.from_user.name}, " \
+                                        f"{point['point'].upper()} " \
+                                        f"деактивирована!"
+
+                    await message.reply_text(text=deactivation_text)
+
+                    complete_status = True
+
+                    raise ApplicationHandlerStop
+
+                elif complete_status:
+                    break
+
+                else:
+                    continue
+
+            elif pushed_button == 'ℹ️: СТАТУС ТОЧКИ':
+                if int(dis) <= point[
+                    'radius'
+                ]:
+                    if point['in_game']:
+                        point_status = 'В игре'
+                    else:
+                        point_status = 'Выведена из игры'
+
+                    if point['team_id']:
+                        team = await get_team_title_by_team_id(
+                            point['team_id']
+                        )
+                    else:
+                        team = 'Точку никто не контролирует'
+
+                    text = f'Название точки:\n' \
+                           f'{point["point"].capitalize()}\n\n' \
+                           f'Статус точки:\n' \
+                           f'{point_status}\n\n' \
+                           f'Точка захвачена стороной:\n' \
+                           f'{team.capitalize()}'
+
+                    await message.reply_text(text=text)
+
+                    complete_status = True
+
+                    raise ApplicationHandlerStop
+
+                elif complete_status:
+                    break
+
+                else:
+                    continue
 
         if complete_status is False:
-            not_reached_text = 'Ни одна из точек не была достигнута!'
+            not_reached_text = 'Ни одна из точек не была достигнута!\n\n' \
+                               'P.S. Не забудь проверить, включен ли режим ' \
+                               'Live Location!'
             await message.reply_text(text=not_reached_text)
+
+        raise ApplicationHandlerStop
 
     except DoesNotExist:
         text = 'Чтобы активировать точку, тебе нужно примкнуть ' \
@@ -182,3 +328,5 @@ async def point_activation(
                'Затем выбрать сторону при помощи команды:\n/team'
 
         await update.message.reply_text(text=text)
+
+        raise ApplicationHandlerStop
