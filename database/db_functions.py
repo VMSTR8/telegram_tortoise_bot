@@ -20,6 +20,20 @@ async def get_user_callsign(telegram_id: int) -> str:
         raise DoesNotExist
 
 
+async def get_user_team(telegram_id: int) -> str:
+    """
+    Returns a string containing the name of the user's team.
+
+    :param telegram_id: Telegram User ID
+    :return: A string with user's team name.
+    """
+    user_team_id = await User.get(telegram_id=telegram_id).values('team_id')
+    user_team_id = user_team_id.get('team_id')
+    if user_team_id:
+        team_name = await Team.get(id=user_team_id).values('title')
+        return team_name.get('title')
+
+
 async def get_users() -> List[dict]:
     """
     Returns a list of dictionaries with user data.
