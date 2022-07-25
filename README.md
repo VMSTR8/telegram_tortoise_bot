@@ -140,8 +140,8 @@ Just go to [explanation of environment variables](#explanation-of-environment-va
 - ❌: (For the admin) Editing user information
 - ❌: (For admin) Pagination of the menu when the admin views the sides, points or users
 - ✅: Game Point Activation
-- ❌: Display information about the remaining time until the point is removed from the game
-- ❌: Checking the status of the point (Activated (and by whom) | Not activated)
+- ✅: Display information about the remaining time until the point is removed from the game
+- ✅: Checking the status of the point (Activated (and by whom) | Not activated)
 - ❌: The user's output of information about himself
 
 As we work on the bot, new functionality will be added to the roadmap, both already implemented and planned.
