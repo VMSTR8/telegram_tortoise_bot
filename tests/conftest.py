@@ -1,5 +1,4 @@
 import os
-from typing import NoReturn
 
 import pytest
 
@@ -7,7 +6,7 @@ from tortoise.contrib.test import finalizer, initializer
 
 
 @pytest.fixture(scope="session")
-def initialize_test_db(request) -> NoReturn:
+def initialize_test_db(request) -> None:
     """
     A fixture for testing the database.
     """
