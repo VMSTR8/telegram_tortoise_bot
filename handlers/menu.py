@@ -34,6 +34,7 @@ from database.db_functions import (
     update_players_team,
     get_user_callsign,
     update_users_in_game,
+    get_user_team,
 )
 
 CREATE_OR_UPDATE_CALLSIGN, CHOOSING_TEAM_ACTION = map(chr, range(2))
@@ -194,10 +195,20 @@ async def team(update: Update,
 
         if teams:
 
-            text = 'Выбери сторону из предложенных ниже:\n\n' \
-                   'Если хочешь отменить выбор стороны, то просто ' \
-                   'вбей /team или любую другую команду. Ну или напиши ' \
-                   'что-нибудь в чат.'
+            user = update.message.from_user.id
+            user_actual_team = await get_user_team(user)
+
+            if user_actual_team:
+                user_actual_team = f'Текущая сторона: ' \
+                                   f'{user_actual_team.capitalize()}'
+            else:
+                user_actual_team = 'Сторона еще не выбрана.'
+
+            text = f'{user_actual_team}\n\n' \
+                   f'Выбери сторону из предложенных ниже:\n\n' \
+                   f'Если хочешь отменить выбор стороны, то просто ' \
+                   f'вбей /team или любую другую команду. Ну или напиши ' \
+                   f'что-нибудь в чат.'
 
             save_data = await update.message.reply_text(
                 text=text,
