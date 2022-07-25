@@ -25,6 +25,7 @@ from database.db_functions import (
     get_points_in_game_status,
     reset_all_points,
     get_point_info,
+    get_user_team,
 )
 
 
@@ -239,3 +240,11 @@ class TestDataBaseFunctions(test.TestCase):
         assert results['point'] == 'point1'
         assert results['latitude'] == 0.0
         assert results['in_game'] == 1
+
+    async def test_get_user_team(self) -> NoReturn:
+        await self.db_data()
+
+        await User.filter(telegram_id=1).update(team_id=1)
+
+        assert await get_user_team(1) == 'team1'
+        assert await get_user_team(2) is None
