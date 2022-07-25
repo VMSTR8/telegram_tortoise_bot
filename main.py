@@ -311,12 +311,15 @@ def main() -> NoReturn:
         ],
     )
 
+    # A handler that tracks the transmission
+    # of coordinates by the user.
     coordinates_handler = MessageHandler(
         filters.LOCATION, coordinates
     )
 
-    # A handler that accepts the coordinates
-    # sent by the user to the chat.
+    # The handler catches the text of the buttons that
+    # are responsible for the operation of activation,
+    # deactivation and for requesting the status of the point.
     point_activation_handler = MessageHandler(
         filters.Regex('📍: АКТИВИРОВАТЬ ТОЧКУ') ^
         filters.Regex('❌: ДЕАКТИВИРОВАТЬ ТОЧКУ') ^
