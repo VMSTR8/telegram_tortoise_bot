@@ -1,6 +1,6 @@
 import re
 import string
-
+from typing import NoReturn
 
 from telegram import Update
 from telegram.error import BadRequest
@@ -34,13 +34,14 @@ from database.db_functions import (
     update_players_team,
     get_user_callsign,
     update_users_in_game,
+    get_user_team,
 )
 
 CREATE_OR_UPDATE_CALLSIGN, CHOOSING_TEAM_ACTION = map(chr, range(2))
 
 
 async def start(update: Update,
-                context: CallbackContext.DEFAULT_TYPE) -> None:
+                context: CallbackContext.DEFAULT_TYPE) -> NoReturn:
     """
     Initializing the bot and sending a welcome message to the user.
     """
@@ -61,14 +62,15 @@ async def start(update: Update,
                      f'пройти простую регистрацию.\n\n' \
                      f'<b>Доступные пользовательские команды:</b>\n' \
                      f'/callsign - регистрация своего позывного в боте\n' \
-                     f'/team - выбор игровой стороны\n\n' \
+                     f'/team - выбор игровой стороны\n' \
+                     f'/admin - вызвать админ-меню\n\n' \
                      f'<i>Создатель чат-бота: @vmstr8</i>'
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=greetings_text,
         parse_mode=ParseMode.HTML,
-        reply_markup=await point_activation_keyboard()
+        reply_markup=point_activation_keyboard()
     )
 
 
@@ -129,7 +131,7 @@ async def commit_callsign(update: Update,
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
-            reply_markup=await point_activation_keyboard()
+            reply_markup=point_activation_keyboard()
         )
 
         raise ApplicationHandlerStop(END)
@@ -194,10 +196,20 @@ async def team(update: Update,
 
         if teams:
 
-            text = 'Выбери сторону из предложенных ниже:\n\n' \
-                   'Если хочешь отменить выбор стороны, то просто ' \
-                   'вбей /team или любую другую команду. Ну или напиши ' \
-                   'что-нибудь в чат.'
+            user = update.message.from_user.id
+            user_actual_team = await get_user_team(user)
+
+            if user_actual_team:
+                user_actual_team = f'Текущая сторона: ' \
+                                   f'{user_actual_team.capitalize()}'
+            else:
+                user_actual_team = 'Сторона еще не выбрана.'
+
+            text = f'{user_actual_team}\n\n' \
+                   f'Выбери сторону из предложенных ниже:\n\n' \
+                   f'Если хочешь отменить выбор стороны, то просто ' \
+                   f'вбей /team или любую другую команду. Ну или напиши ' \
+                   f'что-нибудь в чат.'
 
             save_data = await update.message.reply_text(
                 text=text,
@@ -255,7 +267,9 @@ async def choose_the_team(update: Update,
             )
 
             text = f'Выбрана сторона: {callback_data.capitalize()}'
-            await update.callback_query.edit_message_text(text=text)
+            await update.callback_query.edit_message_text(
+                text=text
+            )
 
             return END
 

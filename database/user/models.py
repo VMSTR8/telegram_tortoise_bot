@@ -60,7 +60,7 @@ class Location(Model):
     time = fields.FloatField(
         default=1200.0,
         null=False,
-        validators=[MinValueValidator(1), MaxValueValidator(10080)]
+        validators=[MinValueValidator(60), MaxValueValidator(604800)]
     )
     radius = fields.IntField(
         default=10,
@@ -71,6 +71,11 @@ class Location(Model):
         'models.Team',
         related_name='locations', null=True, on_delete=fields.SET_NULL
     )
+    user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
+        'models.User',
+        related_name='locations', null=True, on_delete=fields.SET_NULL
+    )
+    expire = fields.DatetimeField(null=True)
 
     def __str__(self):
         return self.point

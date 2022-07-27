@@ -1,4 +1,5 @@
-from typing import List
+from datetime import datetime
+from typing import List, Union, NoReturn
 
 from tortoise.exceptions import DoesNotExist
 
@@ -20,6 +21,31 @@ async def get_user_callsign(telegram_id: int) -> str:
         raise DoesNotExist
 
 
+async def get_user_team(telegram_id: int) -> str:
+    """
+    Returns a string containing the name of the user's team.
+
+    :param telegram_id: Telegram User ID
+    :return: A string with user's team name.
+    """
+    user_team_id = await User.get(telegram_id=telegram_id).values('team_id')
+    user_team_id = user_team_id.get('team_id')
+    if user_team_id:
+        team_name = await Team.get(id=user_team_id).values('title')
+        return team_name.get('title')
+
+
+async def get_user_id(telegram_id: int) -> int:
+    """
+    Returns the user ID.
+
+    :param telegram_id: Telegram User ID
+    :return: An integer that is the user ID
+    """
+    user_id = await User.get(telegram_id=telegram_id).values('id')
+    return user_id.get('id')
+
+
 async def get_users() -> List[dict]:
     """
     Returns a list of dictionaries with user data.
@@ -33,7 +59,7 @@ async def get_users() -> List[dict]:
 async def update_users_in_game(
         telegram_id: int,
         status: bool
-) -> None:
+) -> NoReturn:
     """
     Updates the player's "in_game" status.
 
@@ -45,7 +71,7 @@ async def update_users_in_game(
     await User.filter(telegram_id=telegram_id).update(in_game=status)
 
 
-async def reset_all_users() -> None:
+async def reset_all_users() -> NoReturn:
     """
     Resets the "in_game" and "team_id"
     fields to all users by assigning a null value.
@@ -74,7 +100,7 @@ async def get_teams() -> List[str]:
 async def update_players_team(
         telegram_id: int,
         team_name: str
-) -> None:
+) -> NoReturn:
     """
     Assigns a command to the user. If the telegram ID
     does not exist, it throws an exception.
@@ -107,18 +133,21 @@ async def get_users_team_id(telegram_id: int) -> int:
         raise DoesNotExist
 
 
-async def get_team_title_by_team_id(team_id: int) -> str:
+async def get_team_title_by_team_id(team_id: int) -> Union[str, None]:
     """
     Returns the name of the team via the team ID request.
 
     :param team_id: Team ID of existing team
     :return: Team name string
     """
-    team_title = await Team.get(id=team_id).values()
-    return team_title['title']
+    try:
+        team_title = await Team.get(id=team_id).values('title')
+        return team_title.get('title')
+    except DoesNotExist:
+        return None
 
 
-async def delete_team(team_title: str) -> None:
+async def delete_team(team_title: str) -> NoReturn:
     """
     Deletes the team from the database.
 
@@ -138,20 +167,28 @@ async def get_points() -> List[dict]:
     return await Location.all().values()
 
 
-async def update_points_team_id(
+async def update_points_data(
         point_id: int,
-        team_id: int
-) -> None:
+        team_id: Union[int, None],
+        user_id: Union[int, None],
+        expire: Union[datetime, None]
+) -> NoReturn:
     """
     Updates the Team ID for the point.
 
     :param point_id: ID of existing point
-    :param team_id: Team ID
+    :param team_id: Optional. Team ID or None
+    :param user_id: Optional. Chatbot user ID
+    :param expire: Optional. Accepts a datetime object
     :return: None
     """
     await Location.filter(
         id=point_id
-    ).update(team_id=team_id)
+    ).update(
+        team_id=team_id,
+        user_id=user_id,
+        expire=expire
+    )
 
 
 async def get_point_time(point_id: int) -> int:
@@ -168,7 +205,7 @@ async def get_point_time(point_id: int) -> int:
 async def update_points_in_game_status(
         point_id: int,
         status: bool
-) -> None:
+) -> NoReturn:
     """
     Updates the "in_game" status for the specified point.
 
@@ -191,7 +228,7 @@ async def get_points_in_game_status(point_id: int) -> bool:
     return in_game['in_game']
 
 
-async def reset_all_points() -> None:
+async def reset_all_points() -> NoReturn:
     """
     Resets the "in_game", "time", "team_id" fields
     of the Locations table, assigning a null value.
@@ -203,11 +240,13 @@ async def reset_all_points() -> None:
         await Location.filter(id=point['id']).update(
             in_game=True,
             time=1200.0,
-            team_id=None
+            team_id=None,
+            expire=None,
+            user_id=None
         )
 
 
-async def delete_point(point_title: str) -> None:
+async def delete_point(point_title: str) -> NoReturn:
     """
     Deletes the game point from the database.
 
@@ -226,3 +265,18 @@ async def get_point_info(point_title: str) -> dict:
     """
     point = await Location.get_or_none(point=point_title).values()
     return point
+
+
+async def get_point_expire(point_id: id) -> Union[datetime, None]:
+    """
+    Returns the time when the point was taken out of the game.
+
+    :param point_id: ID of existing point
+    :return: A datetime object containing the time
+    when the point is activated.
+    """
+    try:
+        expire = await Location.get(id=point_id).values('expire')
+        return expire.get('expire')
+    except DoesNotExist:
+        return None

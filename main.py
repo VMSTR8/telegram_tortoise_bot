@@ -1,4 +1,5 @@
 import logging
+from typing import NoReturn
 
 from telegram.ext import (
     CommandHandler,
@@ -27,6 +28,7 @@ from keyboards.keyboards import (
     POINT_TIME,
     POINT_RADIUS,
     RESET_ALL,
+    SEND_MESSAGE,
     STOPPING,
     BACK,
     END,
@@ -54,6 +56,7 @@ from handlers.admin_command import (
     ENTER_DELETING_TEAM,
     ENTER_POINT,
     ENTER_POINT_COORDINATES,
+    ENTER_SEND_MESSAGE,
     ENTER_DELETING_POINT,
     ENTER_EDITING_POINT_NAME,
     ENTER_EDITING_POINT_COORDINATE,
@@ -89,9 +92,11 @@ from handlers.admin_command import (
     stop_nested_admin_handler,
     end_editing_point,
     end_second_level_conv,
+    broadcast,
+    send_message_to_players,
 )
 
-from handlers.location import point_activation
+from handlers.location import point_activation, coordinates
 
 from handlers.unrecognized import unrecognized_command
 
@@ -103,7 +108,7 @@ logging.basicConfig(
 )
 
 
-def main() -> None:
+def main() -> NoReturn:
     """Start the bot."""
 
     # Init database connect
@@ -173,7 +178,7 @@ def main() -> None:
     point_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(
             entering_editing_point,
-            pattern="^" + 'POINT_' + ".*$"
+            pattern='^' + 'POINT_' + '.*$'
         )
         ],
         states={
@@ -225,34 +230,34 @@ def main() -> None:
         entry_points=[
             CallbackQueryHandler(
                 editing_point,
-                pattern="^" + str(EDIT_POINT) + "$"
+                pattern='^' + str(EDIT_POINT) + '$'
             ),
             CallbackQueryHandler(
-                editing_team, pattern="^" + str(EDIT_TEAM) + "$"
+                editing_team, pattern='^' + str(EDIT_TEAM) + '$'
             ),
             CallbackQueryHandler(
-                deleting_team, pattern="^" + str(DELETE_TEAM) + "$"
+                deleting_team, pattern='^' + str(DELETE_TEAM) + '$'
             ),
             CallbackQueryHandler(
-                deleting_point, pattern="^" + str(DELETE_POINT) + "$"
+                deleting_point, pattern='^' + str(DELETE_POINT) + '$'
             ),
         ],
         states={
             SELECTING_POINT: [point_conv],
             ENTER_EDITING_TEAM: [CallbackQueryHandler(
                 callback=commit_editing_team,
-                pattern="^" + 'TEAM_COLOR_' + ".*$"
+                pattern='^' + 'TEAM_COLOR_' + '.*$'
             )],
             ENTER_TEAM_NEW_DATA: [MessageHandler(
                 filters.TEXT & (~ filters.COMMAND), commit_update_team
             )],
             ENTER_DELETING_TEAM: [CallbackQueryHandler(
                 callback=commit_deleting_team,
-                pattern="^" + 'TEAM_COLOR_' + ".*$"
+                pattern='^' + 'TEAM_COLOR_' + '.*$'
             )],
             ENTER_DELETING_POINT: [CallbackQueryHandler(
                 callback=commit_deleting_point,
-                pattern="^" + 'POINT_' + ".*$"
+                pattern='^' + 'POINT_' + '.*$'
             )],
         },
         fallbacks=[
@@ -260,7 +265,7 @@ def main() -> None:
                 filters.COMMAND, stop_nested_admin_handler
             ),
             CallbackQueryHandler(
-                end_second_level_conv, pattern="^" + str(END) + "$"
+                end_second_level_conv, pattern='^' + str(END) + '$'
             ),
         ],
         map_to_parent={
@@ -275,13 +280,16 @@ def main() -> None:
     selection_handlers = [
         second_level_conv,
         CallbackQueryHandler(
-            adding_team, pattern="^" + str(ADD_TEAM) + "$"
+            adding_team, pattern='^' + str(ADD_TEAM) + '$'
         ),
         CallbackQueryHandler(
-            adding_point, pattern="^" + str(ADD_POINT) + "$"
+            adding_point, pattern='^' + str(ADD_POINT) + '$'
         ),
         CallbackQueryHandler(
-            restart_points, pattern="^" + str(RESET_ALL) + "$"
+            restart_points, pattern='^' + str(RESET_ALL) + '$'
+        ),
+        CallbackQueryHandler(
+            broadcast, pattern='^' + str(SEND_MESSAGE) + '$'
         ),
     ]
     admin_handler = ConversationHandler(
@@ -290,7 +298,7 @@ def main() -> None:
             SELECTING_ACTION: selection_handlers,
             BACK: [CallbackQueryHandler(
                 callback=admin,
-                pattern="^" + str(END) + "$"
+                pattern='^' + str(END) + '$'
             )],
             ENTER_TEAM: [MessageHandler(
                 filters.TEXT & (~ filters.COMMAND), commit_team
@@ -302,6 +310,10 @@ def main() -> None:
                 filters.LOCATION | filters.TEXT & (~ filters.COMMAND),
                 commit_point_coordinates
             )],
+            ENTER_SEND_MESSAGE: [MessageHandler(
+                filters.TEXT & (~ filters.COMMAND),
+                send_message_to_players
+            )]
         },
         fallbacks=[
             MessageHandler(
@@ -310,10 +322,19 @@ def main() -> None:
         ],
     )
 
-    # A handler that accepts the coordinates
-    # sent by the user to the chat.
+    # A handler that tracks the transmission
+    # of coordinates by the user.
+    coordinates_handler = MessageHandler(
+        filters.LOCATION, coordinates
+    )
+
+    # The handler catches the text of the buttons that
+    # are responsible for the operation of activation,
+    # deactivation and for requesting the status of the point.
     point_activation_handler = MessageHandler(
-        filters.LOCATION, point_activation
+        filters.Regex('📍: АКТИВИРОВАТЬ ТОЧКУ') ^
+        filters.Regex('❌: ДЕАКТИВИРОВАТЬ ТОЧКУ') ^
+        filters.Regex('ℹ️: СТАТУС ТОЧКИ'), point_activation
     )
 
     # For any text message outside the Conversation handle,
@@ -323,8 +344,9 @@ def main() -> None:
     )
 
     application.add_handler(start_handler, 0)
-    application.add_handler(unrecognized_command_handler, 5)
-    application.add_handler(point_activation_handler, 4)
+    application.add_handler(unrecognized_command_handler, 6)
+    application.add_handler(point_activation_handler, 5)
+    application.add_handler(coordinates_handler, 4)
     application.add_handler(reg_handler, 3)
     application.add_handler(team_handler, 2)
     application.add_handler(admin_handler, 1)
