@@ -4,7 +4,7 @@ WORKDIR /bot
 COPY . .
 
 RUN apk update && apk add gcc musl-dev  \
-    pip install -U setuptools wheel pip
+    && pip install -U setuptools wheel pip
 RUN pip3 wheel -r requirements.txt --wheel-dir=/bot/wheels
 
 FROM python:3.8.9-alpine
