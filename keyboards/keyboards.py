@@ -27,9 +27,11 @@ ADD_POINT, EDIT_POINT, DELETE_POINT = map(chr, range(3, 6))
 
 RESET_ALL = map(chr, range(12, 13))
 
-BACK = map(chr, range(13, 14))
+SEND_MESSAGE = map(chr, range(13, 14))
 
-STOPPING = map(chr, range(14, 15))
+BACK = map(chr, range(15, 16))
+
+STOPPING = map(chr, range(16, 17))
 
 END = ConversationHandler.END
 
@@ -111,6 +113,10 @@ def admin_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton("Сброс: игроки, точки и таймеры",
                                  callback_data=str(RESET_ALL)),
+        ],
+        [
+            InlineKeyboardButton("Отправить сообщение игрокам",
+                                 callback_data=str(SEND_MESSAGE)),
         ],
     ]
 
