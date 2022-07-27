@@ -1,4 +1,4 @@
-FROM python:3.8.9-alpine as base
+FROM --platform=$BUILDPLATFORM python:3.8.9-alpine as base
 
 WORKDIR /bot
 COPY . .
