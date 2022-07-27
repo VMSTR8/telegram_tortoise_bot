@@ -68,7 +68,7 @@ jobs:
           push: false
           platforms: |-
             linux/amd64
-#            linux/arm64
+            linux/arm64
 
   push:
     name: Push it stronger
@@ -101,9 +101,9 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          push: false
+          push: true
           platforms: |-
             linux/amd64
-#            linux/arm64
+            linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
