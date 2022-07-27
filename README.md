@@ -138,7 +138,7 @@ Just go to [explanation of environment variables](#explanation-of-environment-va
 - ✅: (For the admin) Adding, editing, and deleting a point
 - ❌: (For the admin) View all users
 - ❌: (For the admin) Editing user information
-- ❌: (For admin) Pagination of the menu when the admin views the sides, points or users
+- ❌: (For the admin) Pagination of the menu when the admin views the sides, points or users
 - ✅: Game Point Activation
 - ✅: Display information about the remaining time until the point is removed from the game
 - ✅: Checking the status of the point (Activated (and by whom) | Not activated)
