@@ -28,6 +28,7 @@ from keyboards.keyboards import (
     POINT_TIME,
     POINT_RADIUS,
     RESET_ALL,
+    SEND_MESSAGE,
     STOPPING,
     BACK,
     END,
@@ -55,6 +56,7 @@ from handlers.admin_command import (
     ENTER_DELETING_TEAM,
     ENTER_POINT,
     ENTER_POINT_COORDINATES,
+    ENTER_SEND_MESSAGE,
     ENTER_DELETING_POINT,
     ENTER_EDITING_POINT_NAME,
     ENTER_EDITING_POINT_COORDINATE,
@@ -90,6 +92,8 @@ from handlers.admin_command import (
     stop_nested_admin_handler,
     end_editing_point,
     end_second_level_conv,
+    broadcast,
+    send_message_to_players,
 )
 
 from handlers.location import point_activation, coordinates
@@ -174,7 +178,7 @@ def main() -> NoReturn:
     point_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(
             entering_editing_point,
-            pattern="^" + 'POINT_' + ".*$"
+            pattern='^' + 'POINT_' + '.*$'
         )
         ],
         states={
@@ -226,34 +230,34 @@ def main() -> NoReturn:
         entry_points=[
             CallbackQueryHandler(
                 editing_point,
-                pattern="^" + str(EDIT_POINT) + "$"
+                pattern='^' + str(EDIT_POINT) + '$'
             ),
             CallbackQueryHandler(
-                editing_team, pattern="^" + str(EDIT_TEAM) + "$"
+                editing_team, pattern='^' + str(EDIT_TEAM) + '$'
             ),
             CallbackQueryHandler(
-                deleting_team, pattern="^" + str(DELETE_TEAM) + "$"
+                deleting_team, pattern='^' + str(DELETE_TEAM) + '$'
             ),
             CallbackQueryHandler(
-                deleting_point, pattern="^" + str(DELETE_POINT) + "$"
+                deleting_point, pattern='^' + str(DELETE_POINT) + '$'
             ),
         ],
         states={
             SELECTING_POINT: [point_conv],
             ENTER_EDITING_TEAM: [CallbackQueryHandler(
                 callback=commit_editing_team,
-                pattern="^" + 'TEAM_COLOR_' + ".*$"
+                pattern='^' + 'TEAM_COLOR_' + '.*$'
             )],
             ENTER_TEAM_NEW_DATA: [MessageHandler(
                 filters.TEXT & (~ filters.COMMAND), commit_update_team
             )],
             ENTER_DELETING_TEAM: [CallbackQueryHandler(
                 callback=commit_deleting_team,
-                pattern="^" + 'TEAM_COLOR_' + ".*$"
+                pattern='^' + 'TEAM_COLOR_' + '.*$'
             )],
             ENTER_DELETING_POINT: [CallbackQueryHandler(
                 callback=commit_deleting_point,
-                pattern="^" + 'POINT_' + ".*$"
+                pattern='^' + 'POINT_' + '.*$'
             )],
         },
         fallbacks=[
@@ -261,7 +265,7 @@ def main() -> NoReturn:
                 filters.COMMAND, stop_nested_admin_handler
             ),
             CallbackQueryHandler(
-                end_second_level_conv, pattern="^" + str(END) + "$"
+                end_second_level_conv, pattern='^' + str(END) + '$'
             ),
         ],
         map_to_parent={
@@ -276,13 +280,16 @@ def main() -> NoReturn:
     selection_handlers = [
         second_level_conv,
         CallbackQueryHandler(
-            adding_team, pattern="^" + str(ADD_TEAM) + "$"
+            adding_team, pattern='^' + str(ADD_TEAM) + '$'
         ),
         CallbackQueryHandler(
-            adding_point, pattern="^" + str(ADD_POINT) + "$"
+            adding_point, pattern='^' + str(ADD_POINT) + '$'
         ),
         CallbackQueryHandler(
-            restart_points, pattern="^" + str(RESET_ALL) + "$"
+            restart_points, pattern='^' + str(RESET_ALL) + '$'
+        ),
+        CallbackQueryHandler(
+            broadcast, pattern='^' + str(SEND_MESSAGE) + '$'
         ),
     ]
     admin_handler = ConversationHandler(
@@ -291,7 +298,7 @@ def main() -> NoReturn:
             SELECTING_ACTION: selection_handlers,
             BACK: [CallbackQueryHandler(
                 callback=admin,
-                pattern="^" + str(END) + "$"
+                pattern='^' + str(END) + '$'
             )],
             ENTER_TEAM: [MessageHandler(
                 filters.TEXT & (~ filters.COMMAND), commit_team
@@ -303,6 +310,10 @@ def main() -> NoReturn:
                 filters.LOCATION | filters.TEXT & (~ filters.COMMAND),
                 commit_point_coordinates
             )],
+            ENTER_SEND_MESSAGE: [MessageHandler(
+                filters.TEXT & (~ filters.COMMAND),
+                send_message_to_players
+            )]
         },
         fallbacks=[
             MessageHandler(
