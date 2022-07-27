@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import NoReturn
 
 import pytest
@@ -19,13 +20,15 @@ from database.db_functions import (
     get_team_title_by_team_id,
     delete_team,
     get_points,
-    update_points_team_id,
+    update_points_data,
     get_point_time,
     update_points_in_game_status,
     get_points_in_game_status,
     reset_all_points,
     get_point_info,
     get_user_team,
+    get_user_id,
+    get_point_expire,
 )
 
 
@@ -175,12 +178,18 @@ class TestDataBaseFunctions(test.TestCase):
     async def test_update_points_team_id(self) -> NoReturn:
         await self.db_data()
 
-        assert await update_points_team_id(
-            point_id=1, team_id=1
+        assert await update_points_data(
+            point_id=1,
+            team_id=1,
+            user_id=None,
+            expire=None
         ) is None
 
-        assert await update_points_team_id(
-            point_id=2, team_id=2
+        assert await update_points_data(
+            point_id=2,
+            team_id=2,
+            user_id=None,
+            expire=None
         ) is None
 
         results = await get_points()
@@ -216,7 +225,7 @@ class TestDataBaseFunctions(test.TestCase):
 
         await Location.filter(id=1).update(
             in_game=False,
-            time=20.0,
+            time=60.0,
             team_id=1
         )
         await Location.filter(id=1).update(
@@ -248,3 +257,27 @@ class TestDataBaseFunctions(test.TestCase):
 
         assert await get_user_team(1) == 'team1'
         assert await get_user_team(2) is None
+
+    async def test_get_user_id(self):
+        await self.db_data()
+
+        assert await get_user_id(telegram_id=1) == 1
+
+        with pytest.raises(DoesNotExist):
+            await get_users_team_id(telegram_id=5)
+
+    async def test_get_point_expire(self):
+        await self.db_data()
+
+        now = datetime.now()
+
+        await Location.filter(id=1).update(
+            expire=now,
+            team_id=1,
+            user_id=1
+        )
+
+        result = await get_points()
+        assert await get_point_expire(
+            point_id=1
+        ) == result[0]['expire']
