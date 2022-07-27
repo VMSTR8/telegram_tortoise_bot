@@ -49,7 +49,7 @@ jobs:
   build:
     name: Build it faster
     needs: test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out the repo
@@ -66,10 +66,10 @@ jobs:
         with:
           context: .
           push: false
-          platforms: |-
+#          platforms: |-
 #            linux/amd64
-            linux/arm64
-
+#            linux/arm64
+          platforms: linux/arm64
   push:
     name: Push it stronger
     needs: build
@@ -102,8 +102,9 @@ jobs:
         with:
           context: .
           push: true
-          platforms: |-
+#          platforms: |-
 #            linux/amd64
-            linux/arm64
+#            linux/arm64
+          platforms: linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
