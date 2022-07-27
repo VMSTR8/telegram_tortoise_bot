@@ -52,12 +52,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Build the Docker image
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          BUILDPLATFORM: "linux/amd64"
-        run: docker build -f Dockerfile -t bot:latest .
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        id: buildx
+        with:
+          install: true
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: false
+          platforms: |-
+            linux/amd64
+            linux/arm64
 
   push:
     name: Push it stronger
