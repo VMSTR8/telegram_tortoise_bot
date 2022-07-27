@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Union, NoReturn
 
 from tortoise.exceptions import DoesNotExist
@@ -32,6 +33,17 @@ async def get_user_team(telegram_id: int) -> str:
     if user_team_id:
         team_name = await Team.get(id=user_team_id).values('title')
         return team_name.get('title')
+
+
+async def get_user_id(telegram_id: int) -> int:
+    """
+    Returns the user ID.
+
+    :param telegram_id: Telegram User ID
+    :return: An integer that is the user ID
+    """
+    user_id = await User.get(telegram_id=telegram_id).values('id')
+    return user_id.get('id')
 
 
 async def get_users() -> List[dict]:
@@ -121,15 +133,18 @@ async def get_users_team_id(telegram_id: int) -> int:
         raise DoesNotExist
 
 
-async def get_team_title_by_team_id(team_id: int) -> str:
+async def get_team_title_by_team_id(team_id: int) -> Union[str, None]:
     """
     Returns the name of the team via the team ID request.
 
     :param team_id: Team ID of existing team
     :return: Team name string
     """
-    team_title = await Team.get(id=team_id).values()
-    return team_title['title']
+    try:
+        team_title = await Team.get(id=team_id).values('title')
+        return team_title.get('title')
+    except DoesNotExist:
+        return None
 
 
 async def delete_team(team_title: str) -> NoReturn:
@@ -152,20 +167,28 @@ async def get_points() -> List[dict]:
     return await Location.all().values()
 
 
-async def update_points_team_id(
+async def update_points_data(
         point_id: int,
-        team_id: Union[int, None]
+        team_id: Union[int, None],
+        user_id: Union[int, None],
+        expire: Union[datetime, None]
 ) -> NoReturn:
     """
     Updates the Team ID for the point.
 
     :param point_id: ID of existing point
     :param team_id: Optional. Team ID or None
+    :param user_id: Optional. Chatbot user ID
+    :param expire: Optional. Accepts a datetime object
     :return: None
     """
     await Location.filter(
         id=point_id
-    ).update(team_id=team_id)
+    ).update(
+        team_id=team_id,
+        user_id=user_id,
+        expire=expire
+    )
 
 
 async def get_point_time(point_id: int) -> int:
@@ -217,7 +240,9 @@ async def reset_all_points() -> NoReturn:
         await Location.filter(id=point['id']).update(
             in_game=True,
             time=1200.0,
-            team_id=None
+            team_id=None,
+            expire=None,
+            user_id=None
         )
 
 
@@ -240,3 +265,18 @@ async def get_point_info(point_title: str) -> dict:
     """
     point = await Location.get_or_none(point=point_title).values()
     return point
+
+
+async def get_point_expire(point_id: id) -> Union[datetime, None]:
+    """
+    Returns the time when the point was taken out of the game.
+
+    :param point_id: ID of existing point
+    :return: A datetime object containing the time
+    when the point is activated.
+    """
+    try:
+        expire = await Location.get(id=point_id).values('expire')
+        return expire.get('expire')
+    except DoesNotExist:
+        return None
