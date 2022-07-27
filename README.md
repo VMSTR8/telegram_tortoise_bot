@@ -139,6 +139,8 @@ Just go to [explanation of environment variables](#explanation-of-environment-va
 - ❌: (For the admin) View all users
 - ❌: (For the admin) Editing user information
 - ❌: (For the admin) Pagination of the menu when the admin views the sides, points or users
+- ✅: (For the admin) Sending messages to all users who are in the game
+- ❌: (For the admin) Sending different types of messages: photo, voice, audio, video
 - ✅: Game Point Activation
 - ✅: Display information about the remaining time until the point is removed from the game
 - ✅: Checking the status of the point (Activated (and by whom) | Not activated)
