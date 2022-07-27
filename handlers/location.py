@@ -1,5 +1,6 @@
 import asyncio
 import threading
+from datetime import datetime, timedelta
 from asyncio import sleep
 from typing import NoReturn, List
 
@@ -18,13 +19,16 @@ from tortoise.exceptions import DoesNotExist
 
 from database.db_functions import (
     get_points,
-    update_points_team_id,
+    update_points_data,
     get_users_team_id,
     get_point_time,
     update_points_in_game_status,
     get_team_title_by_team_id,
     get_users,
     get_points_in_game_status,
+    get_user_id,
+    get_user_callsign,
+    get_point_expire,
 )
 
 from settings.settings import BOT_TOKEN
@@ -33,7 +37,8 @@ from settings.settings import BOT_TOKEN
 async def success_activation(
         point_id: int,
         point: str,
-        team: str
+        team: str,
+        callsign: str
 ) -> NoReturn:
     """
     Sends a message to all chat users about
@@ -43,6 +48,7 @@ async def success_activation(
     :param point: Name of the point that was activated
     :param team: Name of the game side,
     which took the point out of the game
+    :param callsign: Accepts the user's callsign
     :return: None
     """
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -53,7 +59,8 @@ async def success_activation(
     )
 
     text = f'Оповещение для всех:\n\n' \
-           f'{point.upper()} была подорвана стороной {team.upper()}!'
+           f'{point.upper()} была подорвана стороной {team.upper()} ' \
+           f'игроком {callsign.capitalize()}!'
 
     for user in await get_users():
         if user['in_game']:
@@ -119,9 +126,9 @@ async def pushed_activate_button(
     :param message: An object representing a message.
     :return: None
     """
-
     team_id = await get_users_team_id(message.from_user.id)
     team_name = await get_team_title_by_team_id(team_id)
+    user = await get_user_callsign(message.from_user.id)
 
     complete_status = False
 
@@ -152,13 +159,16 @@ async def pushed_activate_button(
             'team_id'
         ] != team_id:
 
+            interval = await get_point_time(point_id=point['id'])
+
             timer = threading.Timer(
-                interval=await get_point_time(point_id=point['id']),
+                interval=interval,
                 function=sync_success_activation,
                 args=[
                     point['id'],
                     point['point'].capitalize(),
-                    team_name
+                    team_name,
+                    user
                 ]
             )
 
@@ -175,8 +185,12 @@ async def pushed_activate_button(
             activation_text = f"{message.from_user.name}, " \
                               f"{point['point'].upper()} активирована!"
 
-            await update_points_team_id(point_id=point['id'],
-                                        team_id=team_id)
+            await update_points_data(
+                point_id=point['id'],
+                team_id=team_id,
+                user_id=await get_user_id(message.from_user.id),
+                expire=datetime.now() + timedelta(seconds=interval)
+            )
 
             await message.reply_text(text=activation_text)
 
@@ -275,9 +289,11 @@ async def pushed_deactivate_button(
                 if thread.name == point['point']:
                     thread.cancel()
 
-            await update_points_team_id(
+            await update_points_data(
                 point_id=point['id'],
-                team_id=None
+                team_id=None,
+                user_id=None,
+                expire=None
             )
 
             deactivation_text = f"{message.from_user.name}, " \
@@ -331,24 +347,47 @@ async def pushed_point_status_button(
         if int(dis) <= point[
             'radius'
         ]:
-            if point['in_game']:
-                point_status = 'В игре'
-            else:
-                point_status = 'Выведена из игры'
+            in_game = {
+                True: 'В игре',
+                False: 'Выведена из игры'
+            }
 
-            if point['team_id']:
-                team = await get_team_title_by_team_id(
+            team_id = {
+                True: await get_team_title_by_team_id(
                     point['team_id']
-                )
+                ),
+                False: 'Точку никто не контролирует'
+            }
+
+            timer = await get_point_expire(
+                point_id=point['id']
+            )
+            if timer:
+                timer = timer.replace(
+                    tzinfo=None
+                ) - datetime.now()
+
+                if timer.days == 0:
+                    timer = f'Осталось ' \
+                            f'{timer.seconds // 60} ' \
+                            f'минут(ы)'
+                elif timer.days > 0:
+                    timer = f'Осталось ' \
+                            f'{timer.days} ' \
+                            f'день/дня/дней'
+                else:
+                    timer = 'Выведена из игры'
             else:
-                team = 'Точку никто не контролирует'
+                timer = 'Точка еще не активирована!'
 
             text = f'Название точки:\n' \
                    f'{point["point"].capitalize()}\n\n' \
                    f'Статус точки:\n' \
-                   f'{point_status}\n\n' \
+                   f'{in_game[bool(point["in_game"])]}\n\n' \
                    f'Точка захвачена стороной:\n' \
-                   f'{team.capitalize()}'
+                   f'{team_id[bool(point["team_id"])].capitalize()}\n\n' \
+                   f'Таймер:\n' \
+                   f'{timer}'
 
             await message.reply_text(text=text)
 
