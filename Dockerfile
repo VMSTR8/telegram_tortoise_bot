@@ -3,9 +3,9 @@ FROM --platform=$BUILDPLATFORM python:3.8.9-alpine as base
 WORKDIR /bot
 COPY . .
 
-RUN apk update && apk add gcc musl-dev && pip install wheel
-RUN if [[ "$BUILDPLATFORM" == "linux/amd64" ]]; then pip3 wheel -r requirements.txt --wheel-dir=/bot/wheels; else \
-    rm /usr/bin/lsb_release && pip3 wheel -r requirements.txt --wheel-dir=/bot/wheels; fi
+RUN apk update && apk add gcc musl-dev  \
+    pip install -U setuptools wheel pip
+RUN pip3 wheel -r requirements.txt --wheel-dir=/bot/wheels
 
 FROM python:3.8.9-alpine
 
