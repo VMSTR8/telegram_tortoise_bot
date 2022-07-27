@@ -88,15 +88,15 @@ async def point_message(point_name: str) -> str:
     """
     data = await get_point_info(point_name)
 
-    if data['in_game']:
-        point_status = 'В игре'
-    else:
-        point_status = 'Выведена из игры'
+    in_game = {
+        True: 'В игре',
+        False: 'Выведена из игры'
+    }
 
     point_data_message = f'Выбери, какие данные точки нужно ' \
                          f'отредактировать:\n\n' \
                          f'Название: {data["point"].capitalize()}\n' \
-                         f'Статус точки: {point_status}\n' \
+                         f'Статус точки: {in_game[data["in_game"]]}\n' \
                          f'Широта: {data["latitude"]}\n' \
                          f'Долгота: {data["longitude"]}\n' \
                          f'Время подрыва: {int(data["time"]) // 60} мин.\n' \
@@ -429,7 +429,7 @@ async def commit_deleting_team(
                      f'выбрать сторону заново. Ничего страшного ' \
                      f'не произойдет, ' \
                      f'если не предупредить, но вот будет ' \
-                     f'неожиданость, когда ' \
+                     f'неожиданность, когда ' \
                      f'бот при активации точки скажет игроку ' \
                      f'"ты не выбрал ' \
                      f'сторону!"\n\n' \
@@ -862,7 +862,7 @@ async def editing_in_game_point(
 
     if point['in_game']:
         await Location.filter(point=point_name).update(in_game=False)
-        point_status = 'Выведина из игры'
+        point_status = 'Выведена из игры'
     else:
         await Location.filter(point=point_name).update(in_game=True)
         point_status = 'В игре'
