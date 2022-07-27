@@ -1,14 +1,20 @@
 import re
 import threading
+from asyncio import sleep
 from typing import NoReturn
 
 from telegram import Update
-from telegram.error import BadRequest
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import (
     CallbackContext,
     ApplicationHandlerStop,
 )
-from tortoise.exceptions import ValidationError
+from telegram.constants import ParseMode
+
+from tortoise.exceptions import (
+    ValidationError,
+    DoesNotExist
+)
 
 from database.user.models import (
     User,
@@ -24,6 +30,8 @@ from database.db_functions import (
     get_points,
     delete_point,
     get_point_info,
+    get_users,
+    get_user_callsign,
 )
 
 from keyboards.keyboards import (
@@ -47,12 +55,13 @@ from keyboards.keyboards import (
     ENTER_DELETING_TEAM,
     ENTER_POINT,
     ENTER_POINT_COORDINATES,
+    ENTER_SEND_MESSAGE,
     ENTER_DELETING_POINT,
     ENTER_EDITING_POINT_NAME,
     ENTER_EDITING_POINT_COORDINATE,
     ENTER_EDITING_POINT_TIME,
     ENTER_EDITING_POINT_RADIUS,
-) = map(chr, range(14))
+) = map(chr, range(15))
 
 
 def moderate_users_text(text: str) -> str:
@@ -177,11 +186,11 @@ async def adding_team(
     Initiates the addition of the game side.
     """
 
+    await update.callback_query.answer()
+
     text = 'Введи название стороны. Например: желтые.\n\n' \
            'Помни, что название должно быть уникальным.\n' \
-           'Команда /stop отменит создание сотороны.'
-
-    await update.callback_query.answer()
+           'Команда /stop отменит создание стороны.'
 
     await update.callback_query.edit_message_text(
         text=text
@@ -1399,3 +1408,109 @@ async def restart_points(
     )
 
     return BACK
+
+
+async def broadcast(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> ENTER_SEND_MESSAGE:
+    """
+    Starts a dialogue with the user offering
+    to send a message to all players.
+    """
+
+    await update.callback_query.answer()
+
+    text = 'Вбей текстовое сообщение, которое хочешь ' \
+           'отправить всем находящимся в игре участникам ' \
+           'чата.\n\n' \
+           'ВАЖНО! Поддерживается длина сообщения не больше ' \
+           '4096 символов.\n\n' \
+           'Команда /stop отменит пересылку сообщений и ' \
+           'закроет админ-меню.'
+
+    await update.callback_query.edit_message_text(
+        text=text
+    )
+
+    return ENTER_SEND_MESSAGE
+
+
+async def send_message_to_players(
+        update: Update,
+        context: CallbackContext.DEFAULT_TYPE
+) -> SELECTING_ACTION:
+    """
+    Sends a message to all players
+    who are marked as "in game".
+    """
+
+    try:
+        telegram_id = update.message.from_user.id
+        text = update.message.text
+
+        users = await get_users()
+        sender_callsign = await get_user_callsign(
+            telegram_id=telegram_id
+        )
+        sender_callsign = sender_callsign.capitalize()
+        message_to_send = f'⚠️ Сообщение от ' \
+                          f'<b>{sender_callsign}</b> ⚠️\n\n' \
+                          f'{text}'
+
+        for user in users:
+            if user['in_game'] and \
+                    user['telegram_id'] != telegram_id:
+                try:
+                    await context.bot.send_message(
+                        chat_id=user['telegram_id'],
+                        text=message_to_send,
+                        parse_mode=ParseMode.HTML
+                    )
+                    await sleep(0.1)
+                except Forbidden:
+                    continue
+                except BadRequest as error:
+
+                    error_message = f'Допущена ошибка форматирования ' \
+                                    f'текста:\n' \
+                                    f'"{error}"\n\n' \
+                                    f'Исправь ошибку и отправь текст заново!' \
+                                    f'Команда /stop отменит пересылку ' \
+                                    f'сообщений и ' \
+                                    'закроет админ-меню.'
+
+                    await update.message.reply_text(
+                        text=error_message
+                    )
+
+                    raise ApplicationHandlerStop(ENTER_SEND_MESSAGE)
+
+        success_message = 'Сообщение отправлено всем игрокам, ' \
+                          'которые находятся в игре!\n\n' \
+                          'Нажми на /stop, чтобы остановить ' \
+                          'выполнение админских команд.'
+
+        save_data = await context.bot.send_message(
+            text=success_message,
+            chat_id=update.effective_chat.id,
+            reply_markup=admin_keyboard()
+        )
+
+        context.user_data['admin_message_id'] = int(save_data.message_id)
+
+        raise ApplicationHandlerStop(SELECTING_ACTION)
+
+    except DoesNotExist:
+
+        error_message = 'У тебя почему-то не ' \
+                        'зарегистрирован позывной.\n\n' \
+                        '/callsign - вызови команду и вбей ' \
+                        'свой позывной, а уже после отправляй ' \
+                        'для всех сообщение.\n\n' \
+                        'Команда /stop отменит пересылку сообщений и ' \
+                        'закроет админ-меню.'
+
+        await update.message.reply_text(text=error_message)
+
+        raise ApplicationHandlerStop(ENTER_SEND_MESSAGE)
