@@ -222,7 +222,9 @@ async def pushed_activate_button(
     if complete_status is False:
         not_reached_text = 'Ни одна из точек не была достигнута!\n\n' \
                            'P.S. Не забудь проверить, включен ли режим ' \
-                           'Live Location!'
+                           'Live Location!\n\n' \
+                           'Как включить: Вложения - Геопозиция - ' \
+                           'Транслировать геопозицию.'
         await message.reply_text(text=not_reached_text)
 
     raise ApplicationHandlerStop
@@ -315,7 +317,9 @@ async def pushed_deactivate_button(
     if complete_status is False:
         not_reached_text = 'Ни одна из точек не была достигнута!\n\n' \
                            'P.S. Не забудь проверить, включен ли режим ' \
-                           'Live Location!'
+                           'Live Location!\n\n' \
+                           'Как включить: Вложения - Геопозиция - ' \
+                           'Транслировать геопозицию.'
         await message.reply_text(text=not_reached_text)
 
     raise ApplicationHandlerStop
@@ -404,7 +408,9 @@ async def pushed_point_status_button(
     if complete_status is False:
         not_reached_text = 'Ни одна из точек не была достигнута!\n\n' \
                            'P.S. Не забудь проверить, включен ли режим ' \
-                           'Live Location!'
+                           'Live Location!\n\n' \
+                           'Как включить: Вложения - Геопозиция - ' \
+                           'Транслировать геопозицию.'
         await message.reply_text(text=not_reached_text)
 
         raise ApplicationHandlerStop
