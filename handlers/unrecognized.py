@@ -15,7 +15,8 @@ async def unrecognized_command(
 
     text = '<b>Для пользователей доступны следующие команды:</b>\n\n' \
            '/callsign - регистрация своего позывного в боте\n' \
-           '/team - выбор игровой стороны'
+           '/team - выбор игровой стороны\n' \
+           '/admin - вызвать админ-меню'
 
     await update.message.reply_text(
         text=text,
