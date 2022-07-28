@@ -3,7 +3,7 @@ FROM --platform=$BUILDPLATFORM python:3.8.9-alpine as base
 WORKDIR /bot
 COPY . .
 
-RUN apk update && apk add gcc musl-dev python-dev \
+RUN apk update && apk add gcc musl-dev python3-dev \
     && pip install -U setuptools wheel pip
 RUN pip wheel -r requirements.txt --wheel-dir=/bot/wheels
 
