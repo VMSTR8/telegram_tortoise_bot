@@ -12,7 +12,8 @@ FROM --platform=$BUILDPLATFORM python:3.8.9-alpine
 COPY --from=base /bot /bot
 WORKDIR /bot
 
-RUN echo uname -m
+ENV PIP_NO_BINARY=pydantic
+RUN pip install cython && pip install cython
 RUN pip install --no-index --find-links=/bot/wheels -r requirements.txt
 
 ENTRYPOINT ["/bot/entrypoint.sh"]
