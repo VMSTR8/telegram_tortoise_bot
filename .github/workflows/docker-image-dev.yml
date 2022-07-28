@@ -1,0 +1,111 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "development" ]
+    paths-ignore:
+      - '.dockerignore'
+      - '.flake8'
+      - '.gitignore'
+      - 'LICENSE.md'
+      - 'README.md'
+      - 'README.ru.md'
+      - 'requirements.txt'
+
+jobs:
+  flake:
+    name: Flake it harder
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      # Setup Python (faster than using Python container)
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+      - name: Update pip
+        run: python -m pip install -U pip
+
+      - name: Install flake8
+        run: python -m pip install flake8==4.0.1 flake8-variables-names==0.0.5
+
+      - name: Flake me like one of your french
+        run: flake8
+
+  test:
+    name: Test it better
+    needs: flake
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      # Setup Python (faster than using Python container)
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install dependency
+        run: python -m pip install tortoise-orm pytest pytest-asyncio
+
+      - name: Run tests
+        run: python -m pytest tests/test_db.py --asyncio-mode=strict
+
+  build_amd:
+    name: Build it faster amd
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        id: buildx
+        with:
+          install: true
+
+      - name: Build Docker image amd
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: false
+          platforms: linux/amd64
+          no-cache: true
+
+  build_arm:
+    name: Build it faster arm
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        id: buildx
+        with:
+          install: true
+
+      - name: Build Docker image arm
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: false
+          platforms: linux/arm64
+          no-cache: true
