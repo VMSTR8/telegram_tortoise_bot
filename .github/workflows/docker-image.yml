@@ -69,6 +69,7 @@ jobs:
           platforms: |-
             linux/amd64
             linux/arm64
+          no-cache: true
 
   push:
     name: Push it stronger
@@ -105,5 +106,6 @@ jobs:
           platforms: |-
             linux/amd64
             linux/arm64
+          no-cache: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
