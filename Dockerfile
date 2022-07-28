@@ -12,6 +12,7 @@ FROM --platform=$BUILDPLATFORM python:3.8.8-alpine
 COPY --from=base /bot /bot
 WORKDIR /bot
 
-RUN pip install --no-index --find-links=/bot/wheels -r requirements.txt
+RUN pip install cython
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && pip install --no-index --find-links=/bot/wheels -r requirements.txt
 
 ENTRYPOINT ["/bot/entrypoint.sh"]

@@ -17,7 +17,7 @@ idna==3.3
 iso8601==1.0.2
 mccabe==0.6.1
 pycodestyle==2.8.0
-pydantic
+pydantic==1.9.1
 pyflakes==2.4.0
 pypika-tortoise==0.1.5
 pytest==7.1.2
